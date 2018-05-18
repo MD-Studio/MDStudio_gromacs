@@ -12,6 +12,7 @@ global:
     - COMMIT_AUTHOR_EMAIL: "f.zapata@esciencecenter.nl"
 
 install:
+  - (git clone git://github.com/MD-Studio/MDStudio.git --branch v1 --single-branch && pip install -e MDStudio/mdstudio)
   # install library
   - pip install .[test]
 
