@@ -16,6 +16,9 @@ install:
   # install library
   - pip install .[test]
 
+scripts:
+  - echo "TODO: add tests"
+  
 branches:
   only:
     - master
