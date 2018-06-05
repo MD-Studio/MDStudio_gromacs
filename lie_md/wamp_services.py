@@ -12,7 +12,7 @@ from mdstudio.api.endpoint import endpoint
 from mdstudio.deferred.chainable import chainable
 from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.return_value import return_value
-from os.path import join
+from os.path import (abspath, join)
 import json
 
 
@@ -56,6 +56,7 @@ class MDWampApi(ComponentSession):
         the method will perform a SOLVENT LIGAND MD if you provide the
         `protein_file` it will perform a PROTEIN-LIGAND MD.
         """
+        request['workdir'] = abspath(request['workdir'])
         task_id = self.component_config.session.session_id
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id:{}".format(task_id))
