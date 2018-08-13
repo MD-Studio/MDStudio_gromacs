@@ -6,7 +6,7 @@ import os
 import shutil
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/mdstudio"
+workdir = "/tmp/mdstudio/lie_md"
 if os.path.exists(workdir):
     shutil.rmtree(workdir)
 
@@ -27,22 +27,20 @@ class Run_md(ComponentSession):
 
     @chainable
     def on_run(self):
-        with self.group_context('mdgroup'):
-            r = yield self.call(
-                "mdgroup.lie_md.endpoint.liemd",
-                {"cerise_file": cerise_file,
-                 "ligand_file": ligand_file,
-                 "protein_file": None,
-                 "protein_top": protein_top,
-                 "topology_file": topology_file,
-                 "include": include,
-                 "workdir": workdir,
-                 "parameters": {
-                     "sim_time": 0.001,
-                     "residues": residues}})
-            print("MD results ", r)
+        r = yield self.call(
+            "mdgroup.lie_md.endpoint.liemd",
+            {"cerise_file": cerise_file,
+             "ligand_file": ligand_file,
+             "protein_file": None,
+             "protein_top": protein_top,
+             "topology_file": topology_file,
+             "include": include,
+             "workdir": workdir,
+             "parameters": {
+                 "sim_time": 0.001,
+                 "residues": residues}})
+        print("MD results ", r)
 
 
 if __name__ == "__main__":
     main(Run_md)
-
