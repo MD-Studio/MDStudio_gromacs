@@ -5,6 +5,20 @@ from os.path import join
 import os
 import shutil
 
+
+def create_path_file_obj(path):
+    """
+    Encode the input files
+    """
+    print("serializing: ", path)
+    extension = os.path.splitext(path)[1]
+    with open(path, 'r') as f:
+        content = f.read()
+
+    return {
+        'path': path, 'content': content, 'extension': extension}
+
+
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
 workdir = "/tmp/mdstudio/lie_md"
 if os.path.exists(workdir):
@@ -29,12 +43,12 @@ class Run_md(ComponentSession):
     def on_run(self):
         r = yield self.call(
             "mdgroup.lie_md.endpoint.liemd",
-            {"cerise_file": cerise_file,
-             "ligand_file": ligand_file,
+            {"cerise_file": create_path_file_obj(cerise_file),
+             "ligand_file": create_path_file_obj(ligand_file),
              "protein_file": None,
-             "protein_top": protein_top,
-             "topology_file": topology_file,
-             "include": include,
+             "protein_top": create_path_file_obj(protein_top),
+             "topology_file": create_path_file_obj(topology_file),
+             "include": list(map(create_path_file_obj, include)),
              "workdir": workdir,
              "parameters": {
                  "sim_time": 0.001,

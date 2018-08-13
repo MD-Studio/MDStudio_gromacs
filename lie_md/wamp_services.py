@@ -13,6 +13,7 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.return_value import return_value
 from os.path import (abspath, join)
 import json
+import os
 
 
 class MDWampApi(ComponentSession):
@@ -59,6 +60,9 @@ class MDWampApi(ComponentSession):
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id:{}".format(task_id))
 
+        print("so far so good")
+        request = copy_file_path_objects_to_workdir(request.copy())
+
         # Load GROMACS configuration
         gromacs_config = set_gromacs_input(request)
 
@@ -75,3 +79,25 @@ class MDWampApi(ComponentSession):
         status = 'failed' if output is None else 'completed'
         return_value(
             {'status': status, 'output': output})
+
+
+def copy_file_path_objects_to_workdir(d):
+    """
+    Copy the serialized files to the local workdir.
+    """
+    workdir = d['workdir']
+    for key, val in d.items():
+        if isinstance(val, dict) and 'content' in val:
+            d[key] = copy_file_to_workdir(key, val, workdir)
+
+    return d
+
+
+def copy_file_to_workdir(file_path, workdir):
+    """ Dump the serialized file into a local folder"""
+    name = os.path.split(file_path['path'])[1]
+    path = join(workdir, name)
+    with open(path,  'w') as f:
+        f.write()
+
+    return path
