@@ -20,7 +20,7 @@ def create_path_file_obj(path):
 
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/mdstudio/lie_md"
+workdir = "/tmp/lie_md"
 if os.path.exists(workdir):
     shutil.rmtree(workdir)
 
