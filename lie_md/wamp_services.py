@@ -14,6 +14,7 @@ from mdstudio.deferred.return_value import return_value
 from os.path import (abspath, join)
 import json
 import os
+import shutil
 
 
 class MDWampApi(ComponentSession):
@@ -60,7 +61,6 @@ class MDWampApi(ComponentSession):
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id:{}".format(task_id))
 
-        print("so far so good")
         request = copy_file_path_objects_to_workdir(request.copy())
 
         # Load GROMACS configuration
@@ -85,19 +85,30 @@ def copy_file_path_objects_to_workdir(d):
     """
     Copy the serialized files to the local workdir.
     """
+    def condition(x):
+        return isinstance(x, dict) and 'content' in x
+
     workdir = d['workdir']
     for key, val in d.items():
-        if isinstance(val, dict) and 'content' in val:
-            d[key] = copy_file_to_workdir(key, val, workdir)
+        if condition(val):
+            d[key] = copy_file_to_workdir(val, workdir)
+        elif isinstance(val, list) and condition(val[0]):
+            d[key] = [copy_file_to_workdir(x, workdir) for x in val]
 
     return d
 
 
-def copy_file_to_workdir(file_path, workdir):
+def copy_file_to_workdir(serialized_file, workdir):
     """ Dump the serialized file into a local folder"""
-    name = os.path.split(file_path['path'])[1]
-    path = join(workdir, name)
-    with open(path,  'w') as f:
-        f.write()
+    # First try to copy the content
+    file_path = serialized_file['path']
+    file_name = os.path.split(file_path)[1]
+    new_path = join(workdir, file_name)
 
-    return path
+    if serialized_file['content'] is not None:
+        with open(new_path,  'w') as f:
+            f.write(serialized_file['content'])
+    else:
+        shutil.copy(file_path, workdir)
+
+    return new_path

@@ -3,35 +3,34 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.runner import main
 from os.path import join
 import os
-import shutil
 
 
 def create_path_file_obj(path):
     """
     Encode the input files
     """
-    print("serializing: ", path)
     extension = os.path.splitext(path)[1]
-    with open(path, 'r') as f:
-        content = f.read()
 
     return {
-        'path': path, 'content': content, 'extension': extension}
+        'path': path, 'content': None, 'extension': extension}
 
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
 workdir = "/tmp/lie_md"
-if os.path.exists(workdir):
-    shutil.rmtree(workdir)
+if not os.path.exists(workdir):
+    os.mkdir(workdir)
 
-cerise_file = join(workdir, "cerise_config_das5.json")
-ligand_file = join(workdir, "compound.pdb")
+# path to the current directory
+file_path = os.path.realpath(__file__)
+root = os.path.split(file_path)[0]
+
+# Path to the input files
+cerise_file = join(root, 'files', "cerise_config_das5.json")
+ligand_file = join(root, 'files', "compound.pdb")
 protein_file = None
-protein_top = join(workdir, "protein.top")
-topology_file = join(workdir, "input_GMX.itp")
-include = [join(workdir, "attype.itp"), join(workdir, "ref_conf_1-posre.itp")]
-
-shutil.copytree('files', workdir)
+protein_top = join(root, 'files', "protein.top")
+topology_file = join(root, 'files', "input_GMX.itp")
+include = [join(root, 'files', "attype.itp"), join(root, 'files', "ref_conf_1-posre.itp")]
 
 
 class Run_md(ComponentSession):
