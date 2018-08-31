@@ -7,17 +7,17 @@
     "properties": {
 	"protein_file": {
 	    "type": [
-		"string",
+		"object",
 		"null"
 	    ],
 	    "description": "Protein PDB input file"
 	},
 	"ligand_file": {
-	    "type": "string",
+	    "$ref": "resource://mdgroup/common_resources/path_file/v1",
 	    "description": "Ligand PDB input file"
 	},
 	"topology_file": {
-	    "type": "string",
+	    "$ref": "resource://mdgroup/common_resources/path_file/v1",
 	    "description": "Ligand GROMACS topology file"
 	},
 	"include": {
@@ -25,7 +25,7 @@
 	    "description": "List of *itp files included in the topology"
 	},
 	"cerise_file": {
-	    "type": "string",
+	    "$ref": "resource://mdgroup/common_resources/path_file/v1",
 	    "description": "Path to the cerise path file configuration"
 	},
 	"parameters": {

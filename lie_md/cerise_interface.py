@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 from collections import defaultdict
 from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
@@ -10,6 +11,7 @@ import docker
 import hashlib
 import json
 import os
+import six
 
 
 def create_cerise_config(input_session):
@@ -78,7 +80,7 @@ def call_cerise_gromit(
     # Shutdown Service if there are no other jobs running
     yield try_to_close_service(srv_data, cerise_db)
 
-    return_value(sim_dict)
+    return_value(serialize_files(sim_dict))
 
 
 def retrieve_service_from_db(
@@ -418,6 +420,32 @@ def try_to_close_service(srv_data, cerise_db):
     except cc.errors.ServiceNotFound:
         print("There is not Cerise Service running")
         pass
+
+
+def serialize_files(data):
+    """
+    Transform the files to dictionaries representing serialized files
+    """
+    def transform(element):
+        if not os.path.isfile(element):
+            return element
+        else:
+            ext = os.path.splitext(element)[1][:1]
+            return {'path': element, 'extension': ext, 'content': None}
+
+    def serialize(element):
+        print("serializing: ", element)
+        if isinstance(element, six.string_types):
+            return transform(element)
+        elif isinstance(element, dict):
+            return {k: serialize(x) for k, x in element.items()}
+        elif isinstance(element, list):
+            return [serialize(x) for x in element]
+        else:
+            print("is string?: ", isinstance(element, bytes))
+            return element
+
+    return {key: serialize(val) for key, val in data.items()}
 
 
 def get_output(job, config):

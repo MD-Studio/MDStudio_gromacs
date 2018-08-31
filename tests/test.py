@@ -3,21 +3,34 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.runner import main
 from os.path import join
 import os
-import shutil
+
+
+def create_path_file_obj(path):
+    """
+    Encode the input files
+    """
+    extension = os.path.splitext(path)[1]
+
+    return {
+        'path': path, 'content': None, 'extension': extension}
+
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/mdstudio/lie_md"
-if os.path.exists(workdir):
-    shutil.rmtree(workdir)
+workdir = "/tmp/lie_md"
+if not os.path.exists(workdir):
+    os.mkdir(workdir)
 
-cerise_file = join(workdir, "cerise_config_das5.json")
-ligand_file = join(workdir, "compound.pdb")
+# path to the current directory
+file_path = os.path.realpath(__file__)
+root = os.path.split(file_path)[0]
+
+# Path to the input files
+cerise_file = join(root, 'files', "cerise_config_das5.json")
+ligand_file = join(root, 'files', "compound.pdb")
 protein_file = None
-protein_top = join(workdir, "protein.top")
-topology_file = join(workdir, "input_GMX.itp")
-include = [join(workdir, "attype.itp"), join(workdir, "ref_conf_1-posre.itp")]
-
-shutil.copytree('files', workdir)
+protein_top = join(root, 'files', "protein.top")
+topology_file = join(root, 'files', "input_GMX.itp")
+include = [join(root, 'files', "attype.itp"), join(root, 'files', "ref_conf_1-posre.itp")]
 
 
 class Run_md(ComponentSession):
@@ -29,12 +42,12 @@ class Run_md(ComponentSession):
     def on_run(self):
         r = yield self.call(
             "mdgroup.lie_md.endpoint.liemd",
-            {"cerise_file": cerise_file,
-             "ligand_file": ligand_file,
+            {"cerise_file": create_path_file_obj(cerise_file),
+             "ligand_file": create_path_file_obj(ligand_file),
              "protein_file": None,
-             "protein_top": protein_top,
-             "topology_file": topology_file,
-             "include": include,
+             "protein_top": create_path_file_obj(protein_top),
+             "topology_file": create_path_file_obj(topology_file),
+             "include": list(map(create_path_file_obj, include)),
              "workdir": workdir,
              "parameters": {
                  "sim_time": 0.001,
