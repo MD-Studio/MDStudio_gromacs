@@ -434,7 +434,6 @@ def serialize_files(data):
             return {'path': element, 'extension': ext, 'content': None}
 
     def serialize(element):
-        print("serializing: ", element)
         if isinstance(element, six.string_types):
             return transform(element)
         elif isinstance(element, dict):
@@ -442,7 +441,6 @@ def serialize_files(data):
         elif isinstance(element, list):
             return [serialize(x) for x in element]
         else:
-            print("is string?: ", isinstance(element, bytes))
             return element
 
     return {key: serialize(val) for key, val in data.items()}
