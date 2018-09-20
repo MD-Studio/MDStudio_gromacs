@@ -26,7 +26,10 @@
 	},
 	"include": {
 	    "type": "array",
-	    "description": "List of *itp files included in the topology"
+	    "description": "List of *itp files included in the topology",
+	    "items" : {
+		"$ref": "resource://mdgroup/common_resources/path_file/v1"
+	    }
 	},
 	"cerise_file": {
 	    "$ref": "resource://mdgroup/common_resources/path_file/v1",
