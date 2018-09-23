@@ -35,6 +35,11 @@
 	    "$ref": "resource://mdgroup/common_resources/path_file/v1",
 	    "description": "Path to the cerise path file configuration"
 	},
+    "workdir": {
+        "type": "string",
+        "description": "Temporary directory for MD simulation",
+        "default": "/tmp/mdstudio/lie_md"
+    },
 	"parameters": {
 	    "type": "object",
 	    "properties": {
