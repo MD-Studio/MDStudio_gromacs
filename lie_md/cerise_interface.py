@@ -430,7 +430,7 @@ def serialize_files(data):
         if not os.path.isfile(element):
             return element
         else:
-            ext = os.path.splitext(element)[1][:1]
+            ext = os.path.splitext(element)[-1]
             return {'path': element, 'extension': ext, 'content': None}
 
     def serialize(element):
