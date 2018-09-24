@@ -326,7 +326,7 @@ def add_input_files_lie(job, gromacs_config):
     if protein_file is not None:
         job.add_input_file('protein_file', protein_file)
     else:
-        msg = "There is not protein_file then a SOLVENT-LIGAND MD will be performed"
+        msg = "Only ligand_file defined, perform SOLVENT-LIGAND MD"
         print(msg)
 
     # Secondary files are all include as part of the protein
