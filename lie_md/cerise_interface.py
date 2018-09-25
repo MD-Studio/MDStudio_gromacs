@@ -30,8 +30,7 @@ def create_cerise_config(input_session):
     config = defaultdict(lambda: None, config)
 
     # Set Workflow
-    protein_file = input_session['protein_file']
-    config['cwl_workflow'] = choose_cwl_workflow(protein_file)
+    config['cwl_workflow'] = choose_cwl_workflow(input_session.get('protein_file'))
     config['log'] = join(input_session['workdir'], 'cerise.log')
     config['workdir'] = input_session['workdir']
 

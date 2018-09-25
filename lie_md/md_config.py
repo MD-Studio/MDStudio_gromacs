@@ -12,7 +12,7 @@ def set_gromacs_input(dict_input):
     Create input files for gromacs.
     """
     # added a job type
-    job_type = "solvent_ligand_md" if dict_input['protein_file'] is None else "protein_ligand_md"
+    job_type = "solvent_ligand_md" if dict_input.get('protein_file') is None else "protein_ligand_md"
     dict_input['job_type'] = job_type
 
     # correct topology

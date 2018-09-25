@@ -10,6 +10,7 @@ from lie_md.cerise_interface import (
 from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
+from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
 from os.path import (abspath, join)
 import json
@@ -24,7 +25,23 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('liemd', 'liemd_request', 'liemd_response')
+    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response')
+    def run_ligand_solvent_md(self, request, claims):
+        """
+        Run Gromacs MD of ligand in solvent
+        """
+
+        yield self.run_gromacs_liemd(request, claims)
+
+    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response')
+    def run_ligand_protein_md(self, request, claims):
+        """
+        Run Gromacs MD of a protein-ligand system in solvent
+        """
+
+        yield self.run_gromacs_liemd(request, claims)
+
+    @chainable
     def run_gromacs_liemd(self, request, claims):
         """
         First it calls gromit to compute the Ligand-solute energies, then
