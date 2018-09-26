@@ -31,6 +31,8 @@ class MDWampApi(ComponentSession):
         Run Gromacs MD of ligand in solvent
         """
 
+        request['protein_file'] = None
+
         yield self.run_gromacs_liemd(request, claims)
 
     @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response')
@@ -57,7 +59,7 @@ class MDWampApi(ComponentSession):
             * protein_top
             * ligand_file
             * topology_file
-            * reSidues
+            * residues
 
         The cerise_file is the path to the file containing the configuration
         information required to start a Cerise service.

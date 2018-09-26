@@ -30,7 +30,7 @@ def create_cerise_config(input_session):
     config = defaultdict(lambda: None, config)
 
     # Set Workflow
-    config['cwl_workflow'] = choose_cwl_workflow(input_session.get('protein_file'))
+    config['cwl_workflow'] = choose_cwl_workflow(input_session['protein_file'])
     config['log'] = join(input_session['workdir'], 'cerise.log')
     config['workdir'] = input_session['workdir']
 
@@ -319,7 +319,8 @@ def add_input_files_lie(job, gromacs_config):
     """
     # Add files to cerise job
     for name in ['protein_top', 'ligand_file', 'topology_file']:
-        job.add_input_file(name, gromacs_config[name])
+        if name in gromacs_config:
+            job.add_input_file(name, gromacs_config[name])
 
     protein_file = gromacs_config.get('protein_file')
     if protein_file is not None:
@@ -331,7 +332,7 @@ def add_input_files_lie(job, gromacs_config):
     # Secondary files are all include as part of the protein
     # topology. Just to include them whenever the protein topology
     # is used
-    if gromacs_config['include']:
+    if 'include' in gromacs_config and 'protein_top' in gromacs_config:
         for file_path in gromacs_config['include']:
             job.add_secondary_file('protein_top', file_path)
 

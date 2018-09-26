@@ -32,13 +32,13 @@ def fix_topology_ligand(gromacs_config, workdir):
     gromacs_config['topology_file'] = dict_results['itp_filename']
 
     # correct atomtypes file
-    if gromacs_config['include']:
+    if 'include' in gromacs_config:
         fix_atom_types_file(
             gromacs_config['include'], dict_results['attypes'], workdir)
 
-    # Added further include file
-    include_itp = dict_results.get('posre_filename', None)
-    if include_itp is not None:
-        gromacs_config['include'].append(include_itp)
+        # Added further include file
+        include_itp = dict_results.get('posre_filename', None)
+        if include_itp is not None:
+            gromacs_config['include'].append(include_itp)
 
     return gromacs_config
