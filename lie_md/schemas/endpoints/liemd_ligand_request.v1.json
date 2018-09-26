@@ -13,6 +13,10 @@
       "$ref": "resource://mdgroup/common_resources/path_file/v1",
       "description": "Ligand GROMACS topology file"
     },
+    "protein_top": {
+      "$ref": "resource://mdgroup/common_resources/path_file/v1",
+      "description": "File_path containing the topology of the protein"
+    },
     "include": {
       "type": "array",
       "description": "List of *itp files included in the topology",

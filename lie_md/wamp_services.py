@@ -5,8 +5,7 @@ file: wamp_services.py
 
 WAMP service methods the module exposes.
 """
-from lie_md.cerise_interface import (
-    call_cerise_gromit, create_cerise_config)
+from lie_md.cerise_interface import (call_cerise_gromit, create_cerise_config)
 from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
