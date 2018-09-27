@@ -89,6 +89,17 @@ class MDWampApi(ComponentSession):
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id:{}".format(task_id))
 
+        # Create a task specific directory in workdir based on session ID
+        task_workdir = os.path.join(request['workdir'], task_id)
+        try:
+            os.mkdir(task_workdir)
+        except:
+            raise IOError('Unable to create task directory: {0}'.format(task_workdir))
+
+        request['workdir'] = task_workdir
+        self.log.info("store output in: {0}".format(task_workdir))
+
+        # Copy input files to task workdir
         request = copy_file_path_objects_to_workdir(request.copy())
 
         # Load GROMACS configuration
