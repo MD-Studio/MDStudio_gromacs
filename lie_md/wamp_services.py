@@ -80,7 +80,7 @@ class MDWampApi(ComponentSession):
         `protein_file` it will perform a PROTEIN-LIGAND MD.
         """
 
-        # Workdir needs to exist. Might be shared between docker hand host
+        # Base workdir needs to exist. Might be shared between docker and host
         request['workdir'] = abspath(request['workdir'])
         if not os.path.exists(request['workdir']):
             raise IOError('Workdir does not exist: {0}'.format(request['workdir']))
@@ -112,8 +112,7 @@ class MDWampApi(ComponentSession):
             json.dump(cerise_config, f)
 
         # Run the MD and retrieve the energies
-        output = yield call_cerise_gromit(
-            gromacs_config, cerise_config, self.db)
+        output = yield call_cerise_gromit(gromacs_config, cerise_config, self.db)
 
         status = 'failed' if output is None else 'completed'
         return_value(
@@ -126,7 +125,7 @@ def copy_file_path_objects_to_workdir(d):
     """
 
     # Check if d is path_file object
-    path_file = {'content', 'path', 'extension', 'encoding'}
+    path_file = {'content', 'path', 'extension'}
 
     def condition(x):
         return isinstance(x, dict) and set(d.keys()).issubset(path_file)
@@ -142,11 +141,13 @@ def copy_file_path_objects_to_workdir(d):
 
 
 def copy_file_to_workdir(serialized_file, workdir):
-    """ Dump the serialized file into a local folder"""
+    """
+    Dump the serialized file into a local folder
+    """
+
     # First try to copy the content
     file_path = serialized_file['path']
-    file_name = os.path.split(file_path)[1]
-    new_path = join(workdir, file_name)
+    new_path = join(workdir, os.path.basename(file_path))
 
     if serialized_file['content'] is not None:
         with open(new_path,  'w') as f:
