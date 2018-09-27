@@ -124,15 +124,19 @@ def copy_file_path_objects_to_workdir(d):
     """
     Copy the serialized files to the local workdir.
     """
+
+    # Check if d is path_file object
+    path_file = {'content', 'path', 'extension', 'encoding'}
+
     def condition(x):
-        return isinstance(x, dict) and 'content' in x
+        return isinstance(x, dict) and set(d.keys()).issubset(path_file)
 
     workdir = d['workdir']
     for key, val in d.items():
         if condition(val):
             d[key] = copy_file_to_workdir(val, workdir)
-        elif isinstance(val, list) and condition(val[0]):
-            d[key] = [copy_file_to_workdir(x, workdir) for x in val]
+        elif isinstance(val, list):
+            d[key] = [copy_file_to_workdir(x, workdir) for x in val if condition(x)]
 
     return d
 
