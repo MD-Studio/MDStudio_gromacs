@@ -450,30 +450,30 @@ def get_output(job, config):
     """
     retrieve output information from the `job`.
     """
+
     file_formats = {
-        "gromitout": "{}_{}.out",
-        "gromiterr": "{}_{}.err",
-        "gromacslog2": "{}_{}.out",
-        "gromacslog3": "{}_{}.out",
-        "gromacslog4": "{}_{}.out",
-        "gromacslog5": "{}_{}.out",
-        "gromacslog6": "{}_{}.out",
-        "gromacslog7": "{}_{}.out",
-        "gromacslog8": "{}_{}.out",
-        "gromacslog9": "{}_{}.out",
-        "energy_edr":  "{}_{}.edr",
-        "energy_dataframe": "{}_{}.ene",
-        "energyout": "{}_{}.out",
-        "energyerr": "{}_{}.err",
-        "decompose_dataframe": "{}_{}.ene",
-        "decompose_err": "{}_{}.err",
-        "decompose_out": "{}_{}.out"}
+        "gromitout": "{}.out",
+        "gromiterr": "{}.err",
+        "gromacslog2": "{}.out",
+        "gromacslog3": "{}.out",
+        "gromacslog4": "{}.out",
+        "gromacslog5": "{}.out",
+        "gromacslog6": "{}.out",
+        "gromacslog7": "{}.out",
+        "gromacslog8": "{}.out",
+        "gromacslog9": "{}.out",
+        "energy_edr":  "{}.edr",
+        "energy_dataframe": "{}.ene",
+        "energyout": "{}.out",
+        "energyerr": "{}.err",
+        "decompose_dataframe": "{}.ene",
+        "decompose_err": "{}.err",
+        "decompose_out": "{}.out"}
 
     # Save all data about the simulation
     outputs = job.outputs
     results = {
-        key: copy_output_from_remote(
-            outputs[key], key, config, fmt)
+        key: copy_output_from_remote(outputs[key], key, config, fmt)
         for key, fmt in file_formats.items() if key in outputs}
 
     return results
@@ -483,10 +483,10 @@ def copy_output_from_remote(file_object, file_name, config, fmt):
     """
     Copy output files to the localhost.
     """
-    task_id = config['task_id']
+
     workdir = config['workdir']
 
-    path = join(workdir, fmt.format(file_name, task_id))
+    path = join(workdir, fmt.format(file_name))
     file_object.save_as(path)
 
     return path
