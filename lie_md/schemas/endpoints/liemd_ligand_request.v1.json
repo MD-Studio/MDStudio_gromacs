@@ -118,6 +118,7 @@
   },
   "required": [
     "ligand_file",
+    "protein_top",
     "topology_file",
     "cerise_file"
   ]
