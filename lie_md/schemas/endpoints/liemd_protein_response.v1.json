@@ -13,13 +13,38 @@
         "completed"
       ]
     },
-    "output": {
+    "name": {
+      "type": "string",
+      "description": "docker name running Cerise cluster specialisation"
+    },
+    "port": {
+      "type": "integer",
+      "description": "Cerise webDAV connection port"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Cerise job ID based on WAMP session"
+    },
+    "ligand_md5": {
+      "type": "string",
+      "description": "Ligand structure file checksum used for job identification"
+    },
+    "username": {
+      "type": "string",
+      "description": "Username for cluster account"
+    },
+    "job_type": {
+      "type": "string",
+      "description": "type of MD run",
+      "enum": ["solvent_ligand_md", "protein_ligand_md"]
+    },
+    "results": {
       "type": "object",
-      "description": "Gromit energy dataframes"
+      "description":  "Dictionary of MD result files"
     }
   },
   "required": [
-    "output",
-    "status"
+    "status",
+    "results"
   ]
 }
