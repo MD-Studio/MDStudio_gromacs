@@ -28,8 +28,13 @@ class MDWampApi(ComponentSession):
     def run_ligand_solvent_md(self, request, claims):
         """
         Run Gromacs MD of ligand in solvent
+
+        TODO: Stil requires the protein topology and positional restraint
+              (include) files. Makes no sense for ligand in solvent but
+              required by gromit somehow.
         """
 
+        # Protein structure not needed. Explicitly set to None
         request['protein_file'] = None
 
         yield self.run_gromacs_liemd(request, claims)
@@ -74,8 +79,12 @@ class MDWampApi(ComponentSession):
         the method will perform a SOLVENT LIGAND MD if you provide the
         `protein_file` it will perform a PROTEIN-LIGAND MD.
         """
-        
+
+        # Workdir needs to exist. Might be shared between docker hand host
         request['workdir'] = abspath(request['workdir'])
+        if not os.path.exists(request['workdir']):
+            raise IOError('Workdir does not exist: {0}'.format(request['workdir']))
+
         task_id = self.component_config.session.session_id
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id:{}".format(task_id))
