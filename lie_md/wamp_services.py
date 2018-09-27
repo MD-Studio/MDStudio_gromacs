@@ -37,7 +37,8 @@ class MDWampApi(ComponentSession):
         # Protein structure not needed. Explicitly set to None
         request['protein_file'] = None
 
-        yield self.run_gromacs_liemd(request, claims)
+        output = yield self.run_gromacs_liemd(request, claims)
+        return_value(output)
 
     @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response')
     def run_ligand_protein_md(self, request, claims):
@@ -45,7 +46,8 @@ class MDWampApi(ComponentSession):
         Run Gromacs MD of a protein-ligand system in solvent
         """
 
-        yield self.run_gromacs_liemd(request, claims)
+        output = yield self.run_gromacs_liemd(request, claims)
+        return_value(output)
 
     @chainable
     def run_gromacs_liemd(self, request, claims):
@@ -87,10 +89,10 @@ class MDWampApi(ComponentSession):
 
         task_id = self.component_config.session.session_id
         request.update({"task_id": task_id})
-        self.log.info("starting liemd task_id:{}".format(task_id))
+        self.log.info("starting liemd task_id: {}".format(task_id))
 
         # Create a task specific directory in workdir based on session ID
-        task_workdir = os.path.join(request['workdir'], task_id)
+        task_workdir = os.path.join(request['workdir'], str(task_id))
         try:
             os.mkdir(task_workdir)
         except:
@@ -114,9 +116,12 @@ class MDWampApi(ComponentSession):
         # Run the MD and retrieve the energies
         output = yield call_cerise_gromit(gromacs_config, cerise_config, self.db)
 
-        status = 'failed' if output is None else 'completed'
-        return_value(
-            {'status': status, 'output': output})
+        if output is None:
+            output = {'status': 'failed'}
+        else:
+            output['status'] = 'completed'
+
+        return_value(output)
 
 
 def copy_file_path_objects_to_workdir(d):
@@ -125,10 +130,10 @@ def copy_file_path_objects_to_workdir(d):
     """
 
     # Check if d is path_file object
-    path_file = {'content', 'path', 'extension'}
+    path_file = {'content', 'path', 'extension', 'encoding'}
 
     def condition(x):
-        return isinstance(x, dict) and set(d.keys()).issubset(path_file)
+        return isinstance(x, dict) and set(x.keys()).issubset(path_file)
 
     workdir = d['workdir']
     for key, val in d.items():
