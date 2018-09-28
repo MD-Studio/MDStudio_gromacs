@@ -78,6 +78,9 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         srv_data = yield restart_srv_job(srv_data, gromacs_config, cerise_config, cerise_db)
         sim_dict = yield extract_simulation_info(srv_data, cerise_config, cerise_db)
 
+    # register job in DB
+    yield register_srv_job(srv_data, cerise_db)
+
     # Shutdown Service if there are no other jobs running
     yield try_to_close_service(srv_data, cerise_db)
 
@@ -140,21 +143,22 @@ def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
     print("CWL worflow is: {}".format(cerise_config['cwl_workflow']))
 
     # run the job in   the remote
-    print("Running the job in a remote machine using docker: {}".format(cerise_config['docker_image']))
+    print(
+        "Running the job in a remote machine using docker: {}".format(cerise_config['docker_image']))
 
     # submit the job and register it
     job.run()
 
     # Store data in the DB
-    srv_data = collect_srv_data(job.id, cc.service_to_dict(srv), gromacs_config, cerise_config['username'])
+    srv_data = collect_srv_data(
+        job.id, cc.service_to_dict(srv), gromacs_config, cerise_config['username'])
 
     # wait until the job is running
     while job.state == 'Waiting':
         sleep(2)
 
-    # Add srv_dict to database
+    # change jo state
     srv_data['job_state'] = 'Running'
-    yield register_srv_job(job, srv_data, cerise_db)
 
     return_value(srv_data)
 
@@ -354,12 +358,10 @@ def set_input_parameters_lie(job, gromacs_config):
     return job
 
 
-def register_srv_job(job, srv_data, cerise_db):
+def register_srv_job(srv_data, cerise_db):
     """
-    Once the `job` is running in the queue system register
-    it in the `cerise_db`.
+    Register job in the `cerise_db`.
     """
-
     cerise_db.insert_one('cerise', srv_data)
     print("Added service to mongoDB")
 
