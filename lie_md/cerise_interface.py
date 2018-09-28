@@ -95,11 +95,9 @@ def retrieve_service_from_db(cerise_config, gromacs_config, cerise_db):
     :param gromacs_config: Path to the ligand geometry.
     :param cerise_db:      Connector to the DB.
     """
-
-    ligand_file = gromacs_config['ligand_file']
     query = {
         'job_type': gromacs_config['job_type'],
-        'ligand_md5': compute_md5(ligand_file),
+        'ligand_id': compute_ligand_id(cerise_config['workdir']),
         'name': cerise_config['docker_name']}
 
     return cerise_db.find_one('cerise', query)['result']
@@ -262,7 +260,7 @@ def update_srv_info_at_db(srv_data, cerise_db):
     # Do not try to update id in the db
     if "_id" in srv_data:
         srv_data.pop("_id")
-    query = {'ligand_md5': srv_data['ligand_md5']}
+    query = {'ligand_id': srv_data['ligand_id']}
     cerise_db.update_one('cerise', query, {"$set": srv_data})
 
 
@@ -276,9 +274,7 @@ def collect_srv_data(job_id, srv_data, gromacs_config, username):
     srv_data['job_id'] = job_id
 
     # create a unique ID for the ligand
-    ligand_file = gromacs_config['ligand_file']
-
-    srv_data['ligand_md5'] = compute_md5(ligand_file)
+    srv_data['ligand_id'] = compute_ligand_id(srv_data['workdir'])
     srv_data['username'] = username
     srv_data['job_type'] = gromacs_config['job_type']
 
@@ -499,14 +495,11 @@ def copy_output_from_remote(file_object, file_name, config, fmt):
     return path
 
 
-def compute_md5(file_name):
+def compute_ligand_id(workdir):
     """
-    Compute the md5 for a given `file_name`.
+    Use the unique ID of the workdir
     """
-    with open(file_name) as f:
-        xs = f.read()
-
-    return hashlib.md5(xs.encode()).hexdigest()
+    return os.path.split(workdir)[1]
 
 
 def choose_cwl_workflow(protein_file):
