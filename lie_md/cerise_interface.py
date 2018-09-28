@@ -8,7 +8,6 @@ from retrying import retry
 from time import sleep
 import cerise_client.service as cc
 import docker
-import hashlib
 import json
 import os
 import six
@@ -23,8 +22,8 @@ def create_cerise_config(input_session):
     :param input_session: Object containing the cerise files.
     :type input_session:  :py:dict
 
-    :returns:             Cerise config.
-    :rtype:               :py:dict
+    :returns: Cerise config.
+    :rtype: :py:dict
     """
 
     with open(input_session['cerise_file'], 'r') as f:
@@ -97,7 +96,7 @@ def retrieve_service_from_db(cerise_config, gromacs_config, cerise_db):
     """
     query = {
         'job_type': gromacs_config['job_type'],
-        'ligand_id': compute_ligand_id(cerise_config['workdir']),
+        'ligand_id': cerise_config['task_id'],
         'name': cerise_config['docker_name']}
 
     return cerise_db.find_one('cerise', query)['result']
@@ -149,7 +148,7 @@ def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
 
     # Store data in the DB
     srv_data = collect_srv_data(
-        job.id, cc.service_to_dict(srv), gromacs_config, cerise_config['username'])
+        job.id, cc.service_to_dict(srv), gromacs_config, cerise_config)
 
     # wait until the job is running
     while job.state == 'Waiting':
@@ -264,7 +263,7 @@ def update_srv_info_at_db(srv_data, cerise_db):
     cerise_db.update_one('cerise', query, {"$set": srv_data})
 
 
-def collect_srv_data(job_id, srv_data, gromacs_config, username):
+def collect_srv_data(job_id, srv_data, gromacs_config, cerise_config):
     """
     Add all the relevant information for the job and
     service to the service dictionary
@@ -274,8 +273,8 @@ def collect_srv_data(job_id, srv_data, gromacs_config, username):
     srv_data['job_id'] = job_id
 
     # create a unique ID for the ligand
-    srv_data['ligand_id'] = compute_ligand_id(srv_data['workdir'])
-    srv_data['username'] = username
+    srv_data['ligand_id'] = cerise_config['task_id']
+    srv_data['username'] = cerise_config['username']
     srv_data['job_type'] = gromacs_config['job_type']
 
     return srv_data
@@ -289,7 +288,6 @@ def create_lie_job(srv, gromacs_config, cerise_config):
 
     job_name = 'job_{}'.format(cerise_config['task_id'])
     job = try_to_create_job(srv, job_name)
-    # job = srv.create_job(job_name)
 
     # Copy gromacs input files
     job = add_input_files_lie(job, gromacs_config)
@@ -493,13 +491,6 @@ def copy_output_from_remote(file_object, file_name, config, fmt):
     file_object.save_as(path)
 
     return path
-
-
-def compute_ligand_id(workdir):
-    """
-    Use the unique ID of the workdir
-    """
-    return os.path.split(workdir)[1]
 
 
 def choose_cwl_workflow(protein_file):
