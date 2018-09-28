@@ -12,6 +12,7 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
 from os.path import (abspath, join)
+from tempfile import mktemp
 import json
 import os
 import shutil
@@ -91,8 +92,8 @@ class MDWampApi(ComponentSession):
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id: {}".format(task_id))
 
-        # Create a task specific directory in workdir based on session ID
-        task_workdir = os.path.join(request['workdir'], str(task_id))
+        # Create a task specific directory in workdir based on a unique tmp name
+        task_workdir = os.path.join(request['workdir'], os.path.basename(mktemp()))
         try:
             os.mkdir(task_workdir)
         except:
