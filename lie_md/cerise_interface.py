@@ -8,7 +8,6 @@ from retrying import retry
 from time import sleep
 import cerise_client.service as cc
 import docker
-import hashlib
 import json
 import os
 import six
@@ -23,8 +22,8 @@ def create_cerise_config(input_session):
     :param input_session: Object containing the cerise files.
     :type input_session:  :py:dict
 
-    :returns:             Cerise config.
-    :rtype:               :py:dict
+    :returns: Cerise config.
+    :rtype: :py:dict
     """
 
     with open(input_session['cerise_file'], 'r') as f:
@@ -78,6 +77,9 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         srv_data = yield restart_srv_job(srv_data, gromacs_config, cerise_config, cerise_db)
         sim_dict = yield extract_simulation_info(srv_data, cerise_config, cerise_db)
 
+    # register job in DB
+    yield register_srv_job(srv_data, cerise_db)
+
     # Shutdown Service if there are no other jobs running
     yield try_to_close_service(srv_data, cerise_db)
 
@@ -92,11 +94,9 @@ def retrieve_service_from_db(cerise_config, gromacs_config, cerise_db):
     :param gromacs_config: Path to the ligand geometry.
     :param cerise_db:      Connector to the DB.
     """
-
-    ligand_file = gromacs_config['ligand_file']
     query = {
         'job_type': gromacs_config['job_type'],
-        'ligand_md5': compute_md5(ligand_file),
+        'ligand_id': cerise_config['task_id'],
         'name': cerise_config['docker_name']}
 
     return cerise_db.find_one('cerise', query)['result']
@@ -140,21 +140,22 @@ def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
     print("CWL worflow is: {}".format(cerise_config['cwl_workflow']))
 
     # run the job in   the remote
-    print("Running the job in a remote machine using docker: {}".format(cerise_config['docker_image']))
+    print(
+        "Running the job in a remote machine using docker: {}".format(cerise_config['docker_image']))
 
     # submit the job and register it
     job.run()
 
     # Store data in the DB
-    srv_data = collect_srv_data(job.id, cc.service_to_dict(srv), gromacs_config, cerise_config['username'])
+    srv_data = collect_srv_data(
+        job.id, cc.service_to_dict(srv), gromacs_config, cerise_config)
 
     # wait until the job is running
     while job.state == 'Waiting':
         sleep(2)
 
-    # Add srv_dict to database
+    # change jo state
     srv_data['job_state'] = 'Running'
-    yield register_srv_job(job, srv_data, cerise_db)
 
     return_value(srv_data)
 
@@ -258,11 +259,11 @@ def update_srv_info_at_db(srv_data, cerise_db):
     # Do not try to update id in the db
     if "_id" in srv_data:
         srv_data.pop("_id")
-    query = {'ligand_md5': srv_data['ligand_md5']}
+    query = {'ligand_id': srv_data['ligand_id']}
     cerise_db.update_one('cerise', query, {"$set": srv_data})
 
 
-def collect_srv_data(job_id, srv_data, gromacs_config, username):
+def collect_srv_data(job_id, srv_data, gromacs_config, cerise_config):
     """
     Add all the relevant information for the job and
     service to the service dictionary
@@ -272,10 +273,8 @@ def collect_srv_data(job_id, srv_data, gromacs_config, username):
     srv_data['job_id'] = job_id
 
     # create a unique ID for the ligand
-    ligand_file = gromacs_config['ligand_file']
-
-    srv_data['ligand_md5'] = compute_md5(ligand_file)
-    srv_data['username'] = username
+    srv_data['ligand_id'] = cerise_config['task_id']
+    srv_data['username'] = cerise_config['username']
     srv_data['job_type'] = gromacs_config['job_type']
 
     return srv_data
@@ -289,7 +288,6 @@ def create_lie_job(srv, gromacs_config, cerise_config):
 
     job_name = 'job_{}'.format(cerise_config['task_id'])
     job = try_to_create_job(srv, job_name)
-    # job = srv.create_job(job_name)
 
     # Copy gromacs input files
     job = add_input_files_lie(job, gromacs_config)
@@ -354,12 +352,10 @@ def set_input_parameters_lie(job, gromacs_config):
     return job
 
 
-def register_srv_job(job, srv_data, cerise_db):
+def register_srv_job(srv_data, cerise_db):
     """
-    Once the `job` is running in the queue system register
-    it in the `cerise_db`.
+    Register job in the `cerise_db`.
     """
-
     cerise_db.insert_one('cerise', srv_data)
     print("Added service to mongoDB")
 
@@ -495,16 +491,6 @@ def copy_output_from_remote(file_object, file_name, config, fmt):
     file_object.save_as(path)
 
     return path
-
-
-def compute_md5(file_name):
-    """
-    Compute the md5 for a given `file_name`.
-    """
-    with open(file_name) as f:
-        xs = f.read()
-
-    return hashlib.md5(xs.encode()).hexdigest()
 
 
 def choose_cwl_workflow(protein_file):

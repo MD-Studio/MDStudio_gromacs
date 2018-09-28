@@ -16,6 +16,7 @@ from tempfile import mktemp
 import json
 import os
 import shutil
+import uuid
 
 
 class MDWampApi(ComponentSession):
@@ -88,7 +89,7 @@ class MDWampApi(ComponentSession):
         if not os.path.exists(request['workdir']):
             raise IOError('Workdir does not exist: {0}'.format(request['workdir']))
 
-        task_id = self.component_config.session.session_id
+        task_id = self.component_config.session.get("session_id",  uuid.uuid1().hex)
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id: {}".format(task_id))
 
@@ -110,6 +111,7 @@ class MDWampApi(ComponentSession):
 
         # Load Cerise configuration
         cerise_config = create_cerise_config(request)
+        cerise_config['task_id'] = task_id
 
         with open(join(request['workdir'], "cerise.json"), "w") as f:
             json.dump(cerise_config, f)
