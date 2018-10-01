@@ -8,3 +8,4 @@
 ## Added
  * Interface to Cerise
  * Retrieve result from remote using Cerise
+ * Close Cerise after job is done
