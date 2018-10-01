@@ -1,3 +1,10 @@
+# 01-10-2018
+
+## Added
+ * Interface to Cerise
+ * Retrieve result from remote using Cerise
+
+
 ## Removed
 * unused code
 
@@ -5,6 +12,3 @@
 * function complexity
 * clean up in case of cerise failure
 
-## Added
- * Interface to Cerise
- * Retrieve result from remote using Cerise
