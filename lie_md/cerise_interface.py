@@ -68,7 +68,7 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         # extract results
         sim_dict = yield extract_simulation_info(srv_data, cerise_config)
 
-        # register job in DB
+        # Update job state in DB
         update_srv_info_at_db(sim_dict, cerise_db)
 
     except:
