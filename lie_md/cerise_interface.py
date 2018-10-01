@@ -11,6 +11,7 @@ import docker
 import json
 import os
 import six
+import sys
 
 
 def create_cerise_config(input_session):
@@ -56,17 +57,26 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
     :returns:              MD output file paths
     :rtype:                :py:dict
     """
+    try:
+        # Run Jobs
+        srv = create_service(cerise_config)
+        srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
 
-    # Run Jobs
-    srv = create_service(cerise_config)
-    srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
-    sim_dict = yield extract_simulation_info(srv_data, cerise_config)
+        # Register Job
+        register_srv_job(srv_data, cerise_db)
 
-    # register job in DB
-    yield register_srv_job(srv_data, cerise_db)
+        # extract results
+        sim_dict = yield extract_simulation_info(srv_data, cerise_config)
 
-    # Shutdown Service if there are no other jobs running
-    yield try_to_close_service(srv_data, cerise_db)
+        # register job in DB
+        update_srv_info_at_db(sim_dict, cerise_db)
+
+    except:
+        print("simulation failed due to: ", sys.exc_info()[0])
+        sim_dict = None
+    finally:
+        # Shutdown Service if there are no other jobs running
+        yield try_to_close_service(srv_data, cerise_db)
 
     return_value(serialize_files(sim_dict))
 
@@ -270,6 +280,18 @@ def register_srv_job(srv_data, cerise_db):
     """
     cerise_db.insert_one('cerise', srv_data)
     print("Added service to mongoDB")
+
+
+def update_srv_info_at_db(srv_data, cerise_db):
+    """
+    Update the service-job data store in the `cerise_db`,
+    using the new `srv_data` information.
+    """
+    # Do not try to update id in the db
+    if "_id" in srv_data:
+        srv_data.pop("_id")
+    query = {'task_id': srv_data['task_id']}
+    cerise_db.update_one('cerise', query, {"$set": srv_data})
 
 
 def wait_for_job(job, cerise_log):
