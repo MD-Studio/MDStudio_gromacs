@@ -66,19 +66,18 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         register_srv_job(srv_data, cerise_db)
 
         # extract results
-        sim_dict = yield extract_simulation_info(srv_data, cerise_config)
+        srv_data = yield extract_simulation_info(srv_data, cerise_config)
 
         # Update job state in DB
-        update_srv_info_at_db(sim_dict, cerise_db)
+        update_srv_info_at_db(srv_data, cerise_db)
 
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
-        sim_dict = None
     finally:
         # Shutdown Service if there are no other jobs running
         yield try_to_close_service(srv_data, cerise_db)
 
-    return_value(serialize_files(sim_dict))
+    return_value(serialize_files(srv_data))
 
 
 @retry(wait_random_min=500, wait_random_max=2000)
@@ -316,7 +315,6 @@ def try_to_close_service(srv_data, cerise_db):
     """
     Close service it There are no more jobs and
     the service is still running.
-
     """
     try:
         srv = cc.service_from_dict(srv_data)
