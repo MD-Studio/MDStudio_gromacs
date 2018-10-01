@@ -57,25 +57,10 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
     :rtype:                :py:dict
     """
 
-    print("Searching for pending jobs in DB")
-    srv_data = yield retrieve_service_from_db(cerise_config, gromacs_config, cerise_db)
-    if srv_data is None:
-
-        # Create a new service if one is not already running
-        print("There are no pending jobs!")
-        srv = create_service(cerise_config)
-        srv_data = yield submit_new_job(srv, gromacs_config, cerise_config, cerise_db)
-        sim_dict = yield extract_simulation_info(srv_data, cerise_config, cerise_db)
-
-    elif srv_data['job_state'] == 'Success':
-        print("job is already done!")
-        sim_dict = srv_data
-
-    # is the job still running? if it has failed launch it again
-    else:
-        print("The job status is: ", srv_data['job_state'])
-        srv_data = yield restart_srv_job(srv_data, gromacs_config, cerise_config, cerise_db)
-        sim_dict = yield extract_simulation_info(srv_data, cerise_config, cerise_db)
+    # Run Jobs
+    srv = create_service(cerise_config)
+    srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
+    sim_dict = yield extract_simulation_info(srv_data, cerise_config)
 
     # register job in DB
     yield register_srv_job(srv_data, cerise_db)
@@ -84,22 +69,6 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
     yield try_to_close_service(srv_data, cerise_db)
 
     return_value(serialize_files(sim_dict))
-
-
-def retrieve_service_from_db(cerise_config, gromacs_config, cerise_db):
-    """
-    Check if there is an alive service in the db.
-
-    :param cerise_config:  Service metadata.
-    :param gromacs_config: Path to the ligand geometry.
-    :param cerise_db:      Connector to the DB.
-    """
-    query = {
-        'job_type': gromacs_config['job_type'],
-        'ligand_id': cerise_config['task_id'],
-        'name': cerise_config['docker_name']}
-
-    return cerise_db.find_one('cerise', query)['result']
 
 
 @retry(wait_random_min=500, wait_random_max=2000)
@@ -125,13 +94,11 @@ def create_service(cerise_config):
 
 
 @chainable
-def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
+def submit_new_job(srv, gromacs_config, cerise_config):
     """
     Create a new job using the provided `srv` and `cerise_config`.
-    The job's input is extracted from the `gromacs_config`  and
-    the job metadata is stored in the DB using `cerise_db`.
+    The job's input is extracted from the `gromacs_config`.
     """
-
     print("Creating Cerise-client job")
     job = create_lie_job(srv, gromacs_config, cerise_config)
 
@@ -141,12 +108,13 @@ def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
 
     # run the job in   the remote
     print(
-        "Running the job in a remote machine using docker: {}".format(cerise_config['docker_image']))
+        "Running the job in a remote machine using docker: {}".format(
+            cerise_config['docker_image']))
 
     # submit the job and register it
     job.run()
 
-    # Store data in the DB
+    # Collect data
     srv_data = collect_srv_data(
         job.id, cc.service_to_dict(srv), gromacs_config, cerise_config)
 
@@ -161,50 +129,7 @@ def submit_new_job(srv, gromacs_config, cerise_config, cerise_db):
 
 
 @chainable
-def restart_srv_job(srv_data, gromacs_config, cerise_config, cerise_db):
-    """
-    Use a dictionary to restart a Cerise service.
-
-    :param srv_data: Cerise service information.
-    :type srv_data:  :py:dict
-    """
-
-    job_id = srv_data['job_id']
-
-    try:
-        srv = cc.service_from_dict(srv_data)
-        cc.start_managed_service(srv)
-        srv.get_job_by_id(job_id)
-        print("Job {} already running".format(job_id))
-
-    except cc.errors.ServiceNotFound:
-        print("There is no cerise service running")
-        srv_data = yield start_from_scratch(job_id, gromacs_config, cerise_config, cerise_db)
-
-    except cc.errors.JobNotFound:
-        print("There is no job named: {} in the cerise service: {}".format(job_id, srv_data['name']))
-        srv_data = yield start_from_scratch(job_id, gromacs_config, cerise_config, cerise_db)
-
-    return_value(srv_data)
-
-
-@chainable
-def start_from_scratch(job_id, gromacs_config, cerise_config, cerise_db):
-    """
-    If there is not possible to restart a job because it was delete or
-    the service is not available, then create a new job and service if
-    necessary.
-    """
-
-    srv = create_service(cerise_config)
-    print("restarting job from scratch")
-    yield remove_srv_job_from_db(job_id, cerise_db)
-    job = yield submit_new_job(srv, gromacs_config, cerise_config, cerise_db)
-    return_value(job)
-
-
-@chainable
-def extract_simulation_info(srv_data, cerise_config, cerise_db):
+def extract_simulation_info(srv_data, cerise_config):
     """
     Wait for a job to finish, if the job is already done
     return the information retrieved from the db.
@@ -213,20 +138,17 @@ def extract_simulation_info(srv_data, cerise_config, cerise_db):
     :type srv_data:       :py:dict
     :param cerise_config: Cerise service input data
     :type cerise_config:  :py:dict
-    :param cerise_db:     Mongo db collection to store data related to the
-                          Cerise service.
     """
 
     print("Extracting output from: {}".format(cerise_config['workdir']))
     if cc.managed_service_exists(srv_data['name']):
         srv = cc.service_from_dict(srv_data)
-        job = srv.get_job_by_id(srv_data['job_id'])
-        output = wait_extract_clean(job, srv, cerise_config, cerise_db)
+        job = srv.get_job_by_id(srv_data['cerise_job_id'])
+        output = wait_extract_clean(job, srv, cerise_config)
 
         # Update data in the db
         srv_data.update({"results": output})
         srv_data['job_state'] = job.state
-        update_srv_info_at_db(srv_data, cerise_db)
 
     # remove MongoDB object id
     srv_data.pop('_id', None)
@@ -234,7 +156,7 @@ def extract_simulation_info(srv_data, cerise_config, cerise_db):
     return_value(srv_data)
 
 
-def wait_extract_clean(job, srv, cerise_config, cerise_db):
+def wait_extract_clean(job, srv, cerise_config):
     """
     Wait for the `job` to finish, extract the output and cleanup.
     If the job fails returns None.
@@ -246,34 +168,24 @@ def wait_extract_clean(job, srv, cerise_config, cerise_db):
     else:
         output = None
 
-    cleanup(job, srv, cerise_db)
+    # Clean up the job and the service.
+    print("removing job: {} from Cerise-client".format(job.id))
+    srv.destroy_job(job)
+
     return output
 
 
-def update_srv_info_at_db(srv_data, cerise_db):
-    """
-    Update the service-job data store in the `cerise_db`,
-    using the new `srv_data` information.
-    """
-
-    # Do not try to update id in the db
-    if "_id" in srv_data:
-        srv_data.pop("_id")
-    query = {'ligand_id': srv_data['ligand_id']}
-    cerise_db.update_one('cerise', query, {"$set": srv_data})
-
-
-def collect_srv_data(job_id, srv_data, gromacs_config, cerise_config):
+def collect_srv_data(cerise_job_id, srv_data, gromacs_config, cerise_config):
     """
     Add all the relevant information for the job and
     service to the service dictionary
     """
 
     # Save id of the current job in the dict
-    srv_data['job_id'] = job_id
+    srv_data['cerise_job_id'] = cerise_job_id
 
     # create a unique ID for the ligand
-    srv_data['ligand_id'] = cerise_config['task_id']
+    srv_data['task_id'] = cerise_config['task_id']
     srv_data['username'] = cerise_config['username']
     srv_data['job_type'] = gromacs_config['job_type']
 
@@ -375,29 +287,6 @@ def wait_for_job(job, cerise_log):
     print('Cerise log stored at: {}'.format(cerise_log))
     with open(cerise_log, 'w') as f:
         json.dump(job.log, f, indent=2)
-
-
-def cleanup(job, srv, cerise_db, remove_job_from_db=False):
-    """
-    Clean up the job and the service.
-    """
-
-    print("removing job: {} from Cerise-client".format(job.id))
-    srv.destroy_job(job)
-
-    # Remove job from DB
-    if remove_job_from_db:
-        remove_srv_job_from_db(job.id, cerise_db)
-
-
-def remove_srv_job_from_db(job_id, cerise_db):
-    """
-    Remove the service and job information from DB
-    """
-
-    query = {'job_id': job_id}
-    cerise_db.delete_one('cerise', query)
-    print('Removed job: {} from database'.format(job_id))
 
 
 @chainable
