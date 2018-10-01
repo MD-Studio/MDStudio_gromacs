@@ -89,7 +89,7 @@ class MDWampApi(ComponentSession):
         if not os.path.exists(request['workdir']):
             raise IOError('Workdir does not exist: {0}'.format(request['workdir']))
 
-        task_id = self.component_config.session.get("session_id",  uuid.uuid1().hex)
+        task_id = uuid.uuid1().hex
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id: {}".format(task_id))
 
