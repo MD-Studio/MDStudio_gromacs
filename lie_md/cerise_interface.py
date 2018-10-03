@@ -57,6 +57,7 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
     :returns:              MD output file paths
     :rtype:                :py:dict
     """
+    srv_data = None
     try:
         # Run Jobs
         srv = create_service(cerise_config)
@@ -73,9 +74,11 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
 
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
+
     finally:
         # Shutdown Service if there are no other jobs running
-        yield try_to_close_service(srv_data, cerise_db)
+        if srv_data is not None:
+            yield try_to_close_service(srv_data, cerise_db)
 
     return_value(serialize_files(srv_data))
 
