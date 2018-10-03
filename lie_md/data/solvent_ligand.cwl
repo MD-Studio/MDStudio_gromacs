@@ -63,9 +63,6 @@ outputs:
   gromacslog9:
     type: File
     outputSource: gromit/gromacslog_step9
-  trajectory:
-    type: File
-    outputSource: gromit/trajectory
   energy:
     type: File
     outputSource: gromit/energy
