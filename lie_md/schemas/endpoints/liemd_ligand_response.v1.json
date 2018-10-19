@@ -36,11 +36,14 @@
     "job_type": {
       "type": "string",
       "description": "type of MD run",
-      "enum": ["solvent_ligand_md", "protein_ligand_md"]
+      "enum": [
+        "solvent_ligand_md",
+        "protein_ligand_md"
+      ]
     },
     "results": {
       "type": "object",
-      "description":  "Dictionary of MD result files"
+      "description": "Dictionary of MD result files"
     }
   },
   "required": [

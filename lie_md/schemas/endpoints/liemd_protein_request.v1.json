@@ -23,6 +23,7 @@
     },
     "include": {
       "type": "array",
+      "format": "file_array",
       "description": "List of *itp files included in the topology",
       "items": {
         "$ref": "resource://mdgroup/common_resources/path_file/v1"
