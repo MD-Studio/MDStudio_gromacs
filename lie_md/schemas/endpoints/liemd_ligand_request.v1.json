@@ -34,6 +34,11 @@
       "description": "Temporary directory for MD simulation",
       "default": "/tmp/mdstudio/lie_md"
     },
+    "clean_remote_workdir": {
+      "description": "Remove the remote Cerise working directory after the job finsihed or failed",
+      "type": "boolean",
+      "default": true
+    },
     "parameters": {
       "type": "object",
       "properties": {

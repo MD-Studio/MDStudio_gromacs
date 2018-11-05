@@ -42,7 +42,7 @@ def create_cerise_config(input_session):
 
 
 @chainable
-def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
+def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=True):
     """
     Use cerise to run gromacs in a remote cluster, see:
     http://cerise-client.readthedocs.io/en/latest/
@@ -67,7 +67,7 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         register_srv_job(srv_data, cerise_db)
 
         # extract results
-        srv_data = yield extract_simulation_info(srv_data, cerise_config)
+        srv_data = yield extract_simulation_info(srv_data, cerise_config, clean_remote)
 
         # Update job state in DB
         update_srv_info_at_db(srv_data, cerise_db)
@@ -141,7 +141,7 @@ def submit_new_job(srv, gromacs_config, cerise_config):
 
 
 @chainable
-def extract_simulation_info(srv_data, cerise_config):
+def extract_simulation_info(srv_data, cerise_config, clean_remote):
     """
     Wait for a job to finish, if the job is already done
     return the information retrieved from the db.
@@ -156,7 +156,7 @@ def extract_simulation_info(srv_data, cerise_config):
     if cc.managed_service_exists(srv_data['name']):
         srv = cc.service_from_dict(srv_data)
         job = srv.get_job_by_id(srv_data['cerise_job_id'])
-        output = wait_extract_clean(job, srv, cerise_config)
+        output = wait_extract_clean(job, srv, cerise_config, clean_remote)
 
         # Update data in the db
         srv_data.update({"results": output})
@@ -168,7 +168,7 @@ def extract_simulation_info(srv_data, cerise_config):
     return_value(srv_data)
 
 
-def wait_extract_clean(job, srv, cerise_config):
+def wait_extract_clean(job, srv, cerise_config, clean_remote):
     """
     Wait for the `job` to finish, extract the output and cleanup.
     If the job fails returns None.
@@ -181,8 +181,9 @@ def wait_extract_clean(job, srv, cerise_config):
         output = None
 
     # Clean up the job and the service.
-    print("removing job: {} from Cerise-client".format(job.id))
-    srv.destroy_job(job)
+    if clean_remote:
+        print("removing job: {} from Cerise-client".format(job.id))
+        srv.destroy_job(job)
 
     return output
 
