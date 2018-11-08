@@ -8,7 +8,6 @@ Linear Interaction Energy MD calculation
 """
 
 import os
-import sys
 import logging
 import re
 
@@ -20,7 +19,7 @@ def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMo
     outitp={'atomtypes': {'outfile':'attype.itp', 'overwrite':True}}
     """
 
-    print "CORRECT ITP"
+    print("CORRECT ITP")
 
     if posre:
         posreNm="%s-posre.itp"%os.path.splitext(os.path.basename(topOutFn))[0]
@@ -28,28 +27,28 @@ def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMo
         posreNm=None
 
     #read itp
-    print "READ TOP"
+    print("READ TOP")
     blocks,listBlocks,listMols=readCard(topfile)
 
-    print "REMOVE MOLS"
+    print("REMOVE MOLS")
     # remove mols;  eg. WAT to be substituted with SOL in amber to gromacs conversion
     blocks,listBlocks,listMols=topRmMols(blocks,listBlocks,removeMols)
 
-    print "REPLACE MOLS"
+    print("REPLACE MOLS")
     blocks,listBlocks=topReplaceMols(blocks,listBlocks,replaceMols)
 
-    print "HH"
+    print("HH")
     #apply heavy hydrogens(HH)
     newBlocks=heavyH(listBlocks, blocks, listMols, excludeList=excludeHH)
 
-    print "POSRES"
+    print("POSRES")
     #create positional restraints file
     if posre:
         posreNm=outPosre(blocks,listBlocks, listMols, excludePosre)
     else:
         posreNm={}
 
-    print "ADD MOLS"
+    print("ADD MOLS")
     #add additional moleculetypes (e.g. solvent and ions)
     miscBlocks,miscListBlocks,miscListMols=([],[],[])
     for mol in miscMols:
@@ -62,7 +61,7 @@ def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMo
 
     # replace mols in system definition
      
-    print "OUT ITP"
+    print("OUT ITP")
     #write corrected itp (with HH and no atomtype section
     topOut, extItps=itpOut(fixNewBlocks,fixListBlocks,topOutFn,posre=posreNm, excludeList=outitp)
 
@@ -143,12 +142,11 @@ def readCard(filetop):
 
 
 def topRmMols(blocks,blockNames,mols2Del):
-    print "TOP RM MOLS"
+    print("TOP RM MOLS")
     popOut=False
     listOut=[]
     for nbl,blName in enumerate(blockNames):
         if blName=='moleculetype':
-            print blocks[nbl][0][0]
             if blocks[nbl][0][0] in mols2Del:
                 popOut=True
             else:
@@ -160,12 +158,12 @@ def topRmMols(blocks,blockNames,mols2Del):
             listOut.append(nbl)
     
     listOut.sort(reverse=True)
-    print "EXCLUDE", listOut
+    print("EXCLUDE", listOut)
     for nbl in listOut:
         blocks.pop(nbl)
         blockNames.pop(nbl)
     
-    print "CREATE LISTMOLS"
+    print("CREATE LISTMOLS")
     listMols=[]
     mol={}
     for nbl, blockNm in enumerate(blockNames):
@@ -181,22 +179,20 @@ def topRmMols(blocks,blockNames,mols2Del):
 
     if len(mol)>0:
         listMols.append(mol)
-    print "LISTMOLS  ", listMols 
+    print("LISTMOLS  ", listMols)
 
     return (blocks,blockNames,listMols)
 
 
 def topReplaceMols(blocks,blockNames,mols2Rep):
     # nol2Rep: [{'in':'WAT','out':'SOL'},..] 
-    print 'TOPREPLACE'
+    print('TOPREPLACE')
     listin=[x['in'] for x in mols2Rep]
     for nbl,blName in enumerate(blockNames):
         if blName=='molecules':
             for mol in blocks[nbl]:
-                print mol
                 if mol[0] in listin:
                     mol[0]=mols2Rep[listin.index(mol[0])]['out']
-                print mol
     
     return (blocks,blockNames)
 
@@ -205,7 +201,6 @@ def heavyH(blockNames, blocks,listMols, excludeList=['WAT']):
     '''Adjust the weights of hydrogens, and their heavy atom partner'''
     for mol in listMols:
         if mol['name'] not in excludeList:
-            print mol
             for bond in blocks[mol['bonds']]:
                 for hI in [0,1]:
                     if re.match("^h|^H", blocks[mol['atoms']][int(bond[hI])-1] [1]):

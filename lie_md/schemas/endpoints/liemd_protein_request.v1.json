@@ -21,13 +21,13 @@
       "$ref": "resource://mdgroup/common_resources/path_file/v1",
       "description": "Ligand GROMACS topology file"
     },
-    "include": {
-      "type": "array",
-      "format": "file_array",
-      "description": "List of *itp files included in the topology",
-      "items": {
-        "$ref": "resource://mdgroup/common_resources/path_file/v1"
-      }
+    "attype_itp": {
+      "$ref": "resource://mdgroup/common_resources/path_file/v1",
+      "description": "Atom types .itp file for the system"
+    },
+    "protein_posre_itp": {
+      "$ref": "resource://mdgroup/common_resources/path_file/v1",
+      "description": "Protein positional restraints .itp file"
     },
     "cerise_file": {
       "$ref": "resource://mdgroup/common_resources/path_file/v1",

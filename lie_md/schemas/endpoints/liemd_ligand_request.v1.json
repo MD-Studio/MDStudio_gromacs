@@ -17,13 +17,13 @@
       "$ref": "resource://mdgroup/common_resources/path_file/v1",
       "description": "File_path containing the topology of the protein"
     },
-    "include": {
-      "type": "array",
-      "format": "file_array",
-      "description": "List of *itp files included in the topology",
-      "items": {
-        "$ref": "resource://mdgroup/common_resources/path_file/v1"
-      }
+    "attype_itp": {
+      "$ref": "resource://mdgroup/common_resources/path_file/v1",
+      "description": "Atom types .itp file for the system"
+    },
+    "protein_posre_itp": {
+      "$ref": "resource://mdgroup/common_resources/path_file/v1",
+      "description": "Protein positional restraints .itp file"
     },
     "cerise_file": {
       "$ref": "resource://mdgroup/common_resources/path_file/v1",
@@ -35,7 +35,7 @@
       "default": "/tmp/mdstudio/lie_md"
     },
     "clean_remote_workdir": {
-      "description": "Remove the remote Cerise working directory after the job finsihed or failed",
+      "description": "Remove the remote Cerise working directory after the job finished or failed",
       "type": "boolean",
       "default": true
     },

@@ -11,7 +11,6 @@ from time import sleep
 from molhandle import *
 from bs4 import BeautifulSoup
 import os
-import time
 import shutil
 import logging
 import re
@@ -22,6 +21,7 @@ else:
     import subprocess as sp
 
 from .. import settings
+
 AMBERHOME = settings.get('AMBERHOME')
 ACPYPE = settings.get('ACPYPE')
 ATB_URL = 'http://compbio.biosci.uq.edu.au/atb/'

@@ -6,10 +6,12 @@ createTopology function should receive an input file
  (already processed  e.g. protonated)
 and return a tuple containing itp and pdb of the ligand.
 """
+
 import fnmatch
 import numpy as np
 import os
-from lie_md.parsers import (itp_parser, parser_atoms_mol2, parse_file)
+
+from lie_md.parsers import itp_parser, parser_atoms_mol2, parse_file
 from twisted.logger import Logger
 
 logger = Logger()
@@ -63,11 +65,10 @@ def correctItp(itp_file, new_itp_file, posre=True):
             'charge': int(charge)}
 
 
-def fix_atom_types_file(include_files, atomtypes_ligand, workdir):
+def fix_atom_types_file(attypes_file, atomtypes_ligand, workdir):
     """
     added the missing atomtypes into the attypes.itp file.
     """
-    attypes_file = fnmatch.filter(include_files, "*typ*.itp")[0]
 
     # get a dictionary of atomtypes sections together with its sorted keys
     itp_dict, keys = read_include_topology(attypes_file)
@@ -76,8 +77,7 @@ def fix_atom_types_file(include_files, atomtypes_ligand, workdir):
     itp_dict['atomtypes'] = fix_atom_types(itp_dict['atomtypes'], atomtypes_ligand)
 
     # rewrite the atom file
-    write_itp(
-        itp_dict, keys, attypes_file, posre=None, excludeList=[])
+    write_itp(itp_dict, keys, attypes_file, posre=None, excludeList=[])
 
 
 def fix_atom_types(atomtypes, ligand_atomtypes):
