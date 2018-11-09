@@ -36,9 +36,9 @@ def fix_topology_ligand(gromacs_config, workdir):
     if 'attype_itp' in gromacs_config:
         fix_atom_types_file(gromacs_config['attype_itp'], dict_results['attypes'], workdir)
 
-        # Added further include file
-        include_itp = dict_results.get('posre_filename', None)
-        if include_itp is not None:
-            gromacs_config['include'].append(include_itp)
+    # Added further include file
+    include_itp = dict_results.get('posre_filename', None)
+    if include_itp is not None:
+        gromacs_config['include'].append(include_itp)
 
     return gromacs_config
