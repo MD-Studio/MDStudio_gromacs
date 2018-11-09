@@ -5,18 +5,21 @@ file: wamp_services.py
 
 WAMP service methods the module exposes.
 """
+
+import json
+import os
+import shutil
+import uuid
+from autobahn.wamp import RegisterOptions
+from os.path import (abspath, join)
+from tempfile import mktemp
+
 from lie_md.cerise_interface import (call_cerise_gromit, create_cerise_config)
 from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
-from os.path import (abspath, join)
-from tempfile import mktemp
-import json
-import os
-import shutil
-import uuid
 
 
 class MDWampApi(ComponentSession):
@@ -26,7 +29,8 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response')
+    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response',
+              options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_solvent_md(self, request, claims):
         """
         Run Gromacs MD of ligand in solvent
@@ -42,7 +46,8 @@ class MDWampApi(ComponentSession):
         output = yield self.run_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response')
+    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response',
+              options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_protein_md(self, request, claims):
         """
         Run Gromacs MD of a protein-ligand system in solvent
