@@ -135,6 +135,8 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
             yield try_to_close_service(request)
         # Job fails
         else:
+            print("Job {} has FAILED!\nCheck output at: {}".format(
+                request['job_name'], request['workdir']))
             output = {'status': 'failed', 'results': {}}
         return output
 

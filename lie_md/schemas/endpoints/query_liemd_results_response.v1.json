@@ -5,17 +5,22 @@
   "description": "Output of the LIE components using GROMACS MD software",
   "type": "object",
   "properties": {
-    "status": {
-	"$ref": "resource://mdgroup/common_resources/future/v1",
-	"description": "Job status"
-    },
-    "results": {
-      "type": "object",
-      "description": "Dictionary of MD result files"
-    }
+	"status": {
+	    "type": "string",
+	    "description": "Current status of the future/promise",
+	    "enum": [
+		"completed",
+		"failed",
+		"running"
+	    ]
+	},
+      "results": {
+	  "type": "object",
+	  "description": "Dictionary of MD result files"
+      }
   },
-  "required": [
-    "status",
-    "results"
-  ]
+    "required": [
+	"status",
+	"results"
+    ]
 }

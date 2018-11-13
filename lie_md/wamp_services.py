@@ -48,11 +48,14 @@ class MDWampApi(ComponentSession):
 
     @endpoint('query_liemd_results', 'query_liemd_results_request',
               'query_liemd_results_response')
-    def query_liemd_ligand_status(self, request, claims):
+    def query_liemd_ligand_results(self, request, claims):
         """
         Check the status of the simulation and return the results if available.
         """
-        output = yield query_simulation_results(request)
+        print("calling query")
+        clean_remote = request['clean_remote_workdir']
+        output = yield query_simulation_results(
+            request, self.db, clean_remote=clean_remote)
         return_value(output)
 
     @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response',

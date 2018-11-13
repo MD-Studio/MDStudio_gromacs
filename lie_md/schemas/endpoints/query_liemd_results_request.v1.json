@@ -5,7 +5,7 @@
     "description": "Input to query the status of a LIE simulation using GROMACS",
     "type": "object",
     "properties": {
-	"docker_name": {
+	"name": {
 	    "type": "string",
 	    "description": "docker name running Cerise cluster specialisation"
 	},
@@ -41,9 +41,9 @@
 	}
     },
     "required": [
-	"docker_name",
+	"name",
 	"job_name",
-	"user_name",
+	"username",
 	"job_type",
 	"workdir"
     ]

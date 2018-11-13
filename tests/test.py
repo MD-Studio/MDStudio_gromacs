@@ -3,6 +3,7 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.runner import main
 from os.path import join
 import os
+import time
 
 
 def create_path_file_obj(path):
@@ -40,7 +41,7 @@ class Run_md(ComponentSession):
 
     @chainable
     def on_run(self):
-        r = yield self.call(
+        data = yield self.call(
             "mdgroup.lie_md.endpoint.async_liemd_ligand",
             {"cerise_file": create_path_file_obj(cerise_file),
              "ligand_file": create_path_file_obj(ligand_file),
@@ -53,7 +54,14 @@ class Run_md(ComponentSession):
              "parameters": {
                  "sim_time": 0.001,
                  "residues": residues}})
-        print("MD results ", r)
+        print("promised job: ", data)
+
+        time.sleep(20)
+        output = yield self.call(
+            "mdgroup.lie_md.endpoint.query_liemd_results",
+            data
+        )
+        print("MD output: ", output)
 
 
 if __name__ == "__main__":
