@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "GromacsLIE",
+    "description": "Input to query the status of a LIE simulation using GROMACS",
+    "type": "object",
+    "properties": {
+	"docker_name": {
+	    "type": "string",
+	    "description": "docker name running Cerise cluster specialisation"
+	},
+	"port": {
+	    "type": "integer",
+	    "description": "Cerise webDAV connection port",
+	    "default": 29593,
+	},
+	"job_name": {
+	    "type": "string",
+	    "description": "Cerise job name based on WAMP session"
+	},
+	"username": {
+	    "type": "string",
+	    "description": "Username for cluster account"
+	},
+	"workdir": {
+	    "type": "string",
+	    "description": "Path to the folder containing the results"
+	},
+	"clean_remote_workdir": {
+	    "description": "Remove the remote Cerise working directory after the job finished or failed",
+	    "type": "boolean",
+	    "default": true
+	},
+	"job_type": {
+	    "type": "string",
+	    "description": "type of MD run",
+	    "enum": [
+          "solvent_ligand_md",
+          "protein_ligand_md"
+      ]
+	}
+    },
+    "required": [
+	"docker_name",
+	"job_name",
+	"user_name",
+	"job_type",
+	"workdir"
+    ]
+}

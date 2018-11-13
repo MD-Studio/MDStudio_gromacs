@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "GromacsLIE",
+    "description": "Promised output of the LIE components using GROMACS MD software",
+    "type": "object",
+    "properties": {
+	"status": {
+	    "$ref": "resource://mdgroup/common_resources/future/v1",
+	    "description": "Job status"
+	},
+	"docker_name": {
+	    "type": "string",
+	    "description": "docker name running Cerise cluster specialisation"
+	},
+	"port": {
+	    "type": "integer",
+	    "description": "Cerise webDAV connection port"
+	},
+	"job_name": {
+	    "type": "string",
+	    "description": "Cerise job name based on WAMP session"
+	}, 
+	"username": {
+	    "type": "string",
+	    "description": "Username for cluster account"
+	},
+	"workdir": {
+	    "type": "string",
+	    "description": "Path to the folder containing the results"
+	},
+	"job_type": {
+	    "type": "string",
+	    "description": "type of MD run",
+	    "enum": [
+		"solvent_ligand_md",
+		"protein_ligand_md"
+	    ]
+	}
+    },
+    "required": [
+	"status",
+	"docker_name",
+	"job_name",
+	"user_name",
+	"job_type"
+    ]
+}
