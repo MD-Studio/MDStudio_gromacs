@@ -12,7 +12,7 @@
 	"port": {
 	    "type": "integer",
 	    "description": "Cerise webDAV connection port",
-	    "default": 29593,
+	    "default": 29593
 	},
 	"job_name": {
 	    "type": "string",
