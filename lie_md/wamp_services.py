@@ -58,7 +58,6 @@ class MDWampApi(ComponentSession):
         """
         Check the status of the simulation and return the results if available.
         """
-        print("calling query")
         clean_remote = request['clean_remote_workdir']
         output = yield query_simulation_results(
             request, self.db, clean_remote=clean_remote)
