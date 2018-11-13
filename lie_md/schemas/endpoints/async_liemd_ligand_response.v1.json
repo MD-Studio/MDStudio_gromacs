@@ -6,10 +6,15 @@
     "type": "object",
     "properties": {
 	"status": {
-	    "$ref": "resource://mdgroup/common_resources/future/v1",
-	    "description": "Job status"
+	    "type": "string",
+	    "description": "Current status of the future/promise",
+	    "enum": [
+		"completed",
+		"failed",
+		"running"
+	    ]
 	},
-	"docker_name": {
+	"name": {
 	    "type": "string",
 	    "description": "docker name running Cerise cluster specialisation"
 	},
@@ -29,6 +34,10 @@
 	    "type": "string",
 	    "description": "Path to the folder containing the results"
 	},
+	"task_id": {
+	    "type": "string",
+	    "description": "identifier of the whole job"
+	},
 	"job_type": {
 	    "type": "string",
 	    "description": "type of MD run",
@@ -40,9 +49,10 @@
     },
     "required": [
 	"status",
-	"docker_name",
+	"name",
 	"job_name",
-	"user_name",
-	"job_type"
+	"username",
+	"job_type",
+	"task_id"
     ]
 }

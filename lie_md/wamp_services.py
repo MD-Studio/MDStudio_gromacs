@@ -15,7 +15,7 @@ from os.path import (abspath, join)
 from tempfile import mktemp
 
 from lie_md.cerise_interface import (
-    call_cerise_gromit, create_cerise_config, query_simulation_results)
+    call_async_cerise_gromit, call_cerise_gromit, create_cerise_config, query_simulation_results)
 from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
@@ -116,8 +116,8 @@ class MDWampApi(ComponentSession):
         cerise_config, gromacs_config = self.setup_environment(request)
 
         # Run the MD and retrieve the energies
-        output = yield call_cerise_gromit(gromacs_config, cerise_config, self.db,
-                                          clean_remote=request.get('clean_remote_workdir', True))
+        output = call_cerise_gromit(gromacs_config, cerise_config, self.db,
+                                    clean_remote=request.get('clean_remote_workdir', True))
 
         if output is None:
             output = {'status': 'failed'}
@@ -126,20 +126,24 @@ class MDWampApi(ComponentSession):
 
         return_value(output)
 
+    @chainable
     def run_async_gromacs_liemd(self, request, claims):
         """
         async version of the `run_gromacs_liemd` function.
         """
         cerise_config, gromacs_config = self.setup_environment(request)
 
-        return {'status': 'completed'}
+        output = yield call_async_cerise_gromit(
+            gromacs_config, cerise_config, self.db, clean_remote=True)
+
+        return_value(output)
 
     def setup_environment(self, request):
         """
         Set all the configuration to perform a simulation.
         """
         # Base workdir needs to exist. Might be shared between docker and host
-        request['workdir'] = check_workdir(request['workdir'])
+        check_workdir(request['workdir'])
 
         task_id = uuid.uuid1().hex
         request.update({"task_id": task_id})
@@ -153,10 +157,10 @@ class MDWampApi(ComponentSession):
         # Copy input files to task workdir
         request = copy_file_path_objects_to_workdir(request.copy())
 
-        # Build 'include' file list for cerise/CWL
-        request['include'] = []
-        for file_type in ('attype_itp', 'protein_posre_itp'):
-            request['include'].append(request[file_type])
+        # # Build 'include' file list for cerise/CWL
+        # request['include'] = []
+        # for file_type in ('attype_itp', 'protein_posre_itp'):
+        #     request['include'].append(request[file_type])
 
         # Load GROMACS configuration
         gromacs_config = set_gromacs_input(request)
@@ -175,6 +179,7 @@ def create_task_workdir(workdir):
     """
     Create a task specific directory in workdir based on a unique tmp name
     """
+    print("workdir: ", workdir)
     task_workdir = os.path.join(workdir, os.path.basename(mktemp()))
     try:
         os.mkdir(task_workdir)

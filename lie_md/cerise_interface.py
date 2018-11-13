@@ -62,7 +62,7 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=Tr
         # Run Jobs
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
-        srv_data['status'] = yield wait_till_running(srv, srv_data['cerise_job_id'])
+        srv_data['status'] = yield wait_till_running(srv, srv_data['job_name'])
 
         # Register Job
         register_srv_job(srv_data, cerise_db)
@@ -107,14 +107,11 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_rem
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
         register_srv_job(srv_data, cerise_db)
+        srv_data['status'] = 'running'
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
 
-    finally:
-        # Shutdown Service if there are no other jobs running
-        if srv_data is not None:
-            yield try_to_close_service(srv_data)
-
+    print("output: ", srv_data)
     return_value(srv_data)
 
 
@@ -197,9 +194,9 @@ def submit_new_job(srv, gromacs_config, cerise_config):
 
 
 @chainable
-def wait_till_running(srv, job_id):
+def wait_till_running(srv, job_name):
     """wait until the job is running"""
-    job = srv.get_job_by_id(job_id)
+    job = srv.get_job_by_name(job_name)
     while job.state == 'Waiting':
         sleep(2)
 
@@ -222,7 +219,7 @@ def extract_simulation_info(srv_data, cerise_config, clean_remote):
     if cc.managed_service_exists(srv_data['name']):
         srv = cc.service_from_dict(srv_data)
         job = srv.get_job_by_name(srv_data['job_name'])
-        output = wait_extract_clean(job, srv, cerise_config, clean_remote)
+        output = wait_extract_clean(job, srv, cerise_config['workdir'], clean_remote)
 
         # Update data in the db
         srv_data.update({"results": output})
@@ -259,7 +256,6 @@ def collect_srv_data(cerise_job_name, srv_data, gromacs_config, cerise_config):
     Add all the relevant information for the job and
     service to the service dictionary
     """
-
     # Save name of the current job in the dict
     srv_data['job_name'] = cerise_job_name
 
@@ -268,7 +264,6 @@ def collect_srv_data(cerise_job_name, srv_data, gromacs_config, cerise_config):
     srv_data['username'] = cerise_config['username']
     srv_data['job_type'] = gromacs_config['job_type']
     srv_data['port'] = cerise_config.get('port', 29593)
-    srv_data['docker_name'] = cerise_config['docker_name']
     srv_data['workdir'] = cerise_config['workdir']
 
     return srv_data
@@ -370,7 +365,7 @@ def wait_for_job(job, cerise_log):
     """
     Wait until job is done.
     """
-
+    print("waiting for job")
     while job.is_running():
         sleep(30)
 
@@ -433,7 +428,6 @@ def get_output(job, workdir):
         """
         Copy output files to the localhost.
         """
-
         path = join(workdir, fmt.format(file_name))
         job.outputs[file_name].save_as(path)
 

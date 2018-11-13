@@ -16,7 +16,7 @@ def create_path_file_obj(path):
 
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/lie_md"
+workdir = "/tmp/lie_md/das5"
 if not os.path.exists(workdir):
     os.mkdir(workdir)
 
@@ -41,7 +41,7 @@ class Run_md(ComponentSession):
     @chainable
     def on_run(self):
         r = yield self.call(
-            "mdgroup.lie_md.endpoint.liemd",
+            "mdgroup.lie_md.endpoint.async_liemd_ligand",
             {"cerise_file": create_path_file_obj(cerise_file),
              "ligand_file": create_path_file_obj(ligand_file),
              "protein_file": None,
@@ -49,6 +49,7 @@ class Run_md(ComponentSession):
              "topology_file": create_path_file_obj(topology_file),
              "include": list(map(create_path_file_obj, include)),
              "workdir": workdir,
+             "clean_remote_workdir": False,
              "parameters": {
                  "sim_time": 0.001,
                  "residues": residues}})
