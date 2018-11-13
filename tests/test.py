@@ -17,9 +17,9 @@ def create_path_file_obj(path):
 
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/lie_md/das5"
+workdir = "/tmp/lie_md"
 if not os.path.exists(workdir):
-    os.mkdir(workdir)
+    os.makedirs(workdir, exists_ok=True)
 
 # path to the current directory
 file_path = os.path.realpath(__file__)
