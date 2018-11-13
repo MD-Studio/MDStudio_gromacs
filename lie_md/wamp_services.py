@@ -54,7 +54,7 @@ class MDWampApi(ComponentSession):
 
     @endpoint('query_liemd_results', 'query_liemd_results_request',
               'query_liemd_results_response')
-    def query_liemd_ligand_results(self, request, claims):
+    def query_liemd_results(self, request, claims):
         """
         Check the status of the simulation and return the results if available.
         """
