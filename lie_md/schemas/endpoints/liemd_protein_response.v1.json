@@ -1,53 +1,16 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://mdstudio/schemas/gromacs_lie_response.json",
-  "title": "GromacsLIE",
-  "description": "Output of the LIE components using GROMACS MD software",
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "description": "Job final status",
-      "enum": [
-        "failed",
-        "completed"
-      ]
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "GromacsLIE",
+    "description": "Output of the LIE components using GROMACS MD software",
+    "type": "object",
+    "properties": {
+      "future": {
+	  "$ref": "resource://mdgroup/common_resources/future/v1",
+	  "description": "Object describing a future results"
+      }	
     },
-    "name": {
-      "type": "string",
-      "description": "docker name running Cerise cluster specialisation"
-    },
-    "port": {
-      "type": "integer",
-      "description": "Cerise webDAV connection port"
-    },
-    "job_id": {
-      "type": "string",
-      "description": "Cerise job ID based on WAMP session"
-    },
-    "ligand_md5": {
-      "type": "string",
-      "description": "Ligand structure file checksum used for job identification"
-    },
-    "username": {
-      "type": "string",
-      "description": "Username for cluster account"
-    },
-    "job_type": {
-      "type": "string",
-      "description": "type of MD run",
-      "enum": [
-        "solvent_ligand_md",
-        "protein_ligand_md"
-      ]
-    },
-    "results": {
-      "type": "object",
-      "description": "Dictionary of MD result files"
-    }
-  },
-  "required": [
-    "status",
-    "results"
-  ]
+    "required": [
+	"future"
+    ]
 }

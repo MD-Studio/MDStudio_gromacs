@@ -1,26 +1,16 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://mdstudio/schemas/gromacs_lie_response.json",
-  "title": "GromacsLIE",
-  "description": "Output of the LIE components using GROMACS MD software",
-  "type": "object",
-  "properties": {
-	"status": {
-	    "type": "string",
-	    "description": "Current status of the future/promise",
-	    "enum": [
-		"completed",
-		"failed",
-		"running"
-	    ]
-	},
-      "results": {
-	  "type": "object",
-	  "description": "Dictionary of MD result files"
-      }
-  },
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "GromacsLIE",
+    "description": "Output of the LIE components using GROMACS MD software",
+    "type": "object",
+    "properties": {
+	"future": {
+	    "$ref": "resource://mdgroup/common_resources/future/v1",
+	    "description": "Object describing a future results"
+	}
+    },
     "required": [
-	"status",
-	"results"
+	"future"
     ]
 }
