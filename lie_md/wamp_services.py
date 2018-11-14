@@ -126,12 +126,6 @@ class MDWampApi(ComponentSession):
         # Run the MD and retrieve the energies
         output = call_cerise_gromit(gromacs_config, cerise_config, self.db,
                                     clean_remote=request.get('clean_remote_workdir', True))
-
-        if output is None:
-            output = {'status': 'failed'}
-        else:
-            output['status'] = 'completed'
-
         return_value(output)
 
     @chainable
