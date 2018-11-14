@@ -62,26 +62,25 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=Tr
         # Run Jobs
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
-        srv_data['status'] = yield wait_till_running(srv, srv_data['job_name'])
-
+        srv_data['status'] = yield wait_till_running(srv, srv_data['task_id'])
         # Register Job
         register_srv_job(srv_data, cerise_db)
 
-        # extract results
-        srv_data = yield extract_simulation_info(srv_data, cerise_config, clean_remote)
+        # # extract results
+        output = yield query_simulation_results(srv_data, cerise_db, clean_remote)
 
         # Update job state in DB
         update_srv_info_at_db(srv_data, cerise_db)
+
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
+        output = {'status': 'failed', 'task_id': cerise_config['task_id']}
 
     finally:
         # Shutdown Service if there are no other jobs running
         if srv_data is not None:
             yield try_to_close_service(srv_data)
 
-    output = {'status': srv_data['status'], 'task_id': srv_data,
-              'results': serialize_files(srv_data['results'])}
     return_value(output)
 
 
@@ -112,7 +111,9 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_rem
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
 
-    return_value({'status': 'running', 'task_id': srv_data['task_id']})
+    output = {'status': 'running', 'task_id': srv_data['task_id'],
+              'query_url': 'mdgroup.lie_md.endpoint.query_liemd_results'}
+    return_value(output)
 
 
 def find_data(cerise_db, keyword, value):
@@ -130,10 +131,16 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
     task_id = request['task_id']
 
     try:
-        srv_data = cerise_db.find_one('cerise', {'task_id': task_id})
+        if 'name' in request:
+            srv_data = request
+        else:
+            # Search for the service
+            srv_data = yield cerise_db.find_one('cerise', {'task_id': task_id})['result']
+
+        # Start service if necessary
         srv = cc.service_from_dict(srv_data)
 
-        job = srv.get_job_by_name(srv_data['job_name'])
+        job = srv.get_job_by_name(srv_data['task_id'])
         status = job.state
 
         # Job is still running
@@ -152,7 +159,8 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
         # Job fails
         else:
             print("Job {} has FAILED!\nCheck output at: {}".format(
-                request['job_name'], request['workdir']))
+                request['task_id'], srv_data['workdir']))
+            output = wait_extract_clean(job, srv, request['workdir'], clean_remote)
             status = 'failed'
 
         return {'status': status, 'task_id': task_id, 'results': results}
@@ -216,38 +224,10 @@ def submit_new_job(srv, gromacs_config, cerise_config):
 def wait_till_running(srv, job_name):
     """wait until the job is running"""
     job = srv.get_job_by_name(job_name)
-    while job.state == 'Waiting':
+    while job.state.lower() == 'waiting':
         sleep(2)
 
-    return_value('Running')
-
-
-@chainable
-def extract_simulation_info(srv_data, cerise_config, clean_remote):
-    """
-    Wait for a job to finish, if the job is already done
-    return the information retrieved from the db.
-
-    :param srv_data:      Cerise service meta-data
-    :type srv_data:       :py:dict
-    :param cerise_config: Cerise service input data
-    :type cerise_config:  :py:dict
-    """
-
-    print("Extracting output from: {}".format(cerise_config['workdir']))
-    if cc.managed_service_exists(srv_data['name']):
-        srv = cc.service_from_dict(srv_data)
-        job = srv.get_job_by_name(srv_data['job_name'])
-        output = wait_extract_clean(job, srv, cerise_config['workdir'], clean_remote)
-
-        # Update data in the db
-        srv_data.update({"results": output})
-        srv_data['job_state'] = job.state
-
-    # remove MongoDB object id
-    srv_data.pop('_id', None)
-
-    return_value(srv_data)
+    return_value('running')
 
 
 def wait_extract_clean(job, srv, workdir, clean_remote):
@@ -257,10 +237,7 @@ def wait_extract_clean(job, srv, workdir, clean_remote):
     """
     log = join(workdir, 'cerise.log')
     wait_for_job(job, log)
-    if job.state == "Success":
-        output = get_output(job, workdir)
-    else:
-        output = None
+    output = get_output(job, workdir)
 
     # Clean up the job and the service.
     if clean_remote:
@@ -290,7 +267,6 @@ def create_lie_job(srv, gromacs_config, cerise_config):
     Create a Cerise job using the cerise `srv` and set gromacs
     parameters using `gromacs_config`.
     """
-
     job = try_to_create_job(srv, cerise_config['task_id'])
 
     # Copy gromacs input files
@@ -386,7 +362,7 @@ def wait_for_job(job, cerise_log):
 
     # Process output
     if job.state != 'Success':
-        print('There was an error: {}'.format(job.state))
+        print('Cerise reported error: {}'.format(job.state))
 
     print('Cerise log stored at: {}'.format(cerise_log))
     with open(cerise_log, 'w') as f:
@@ -444,9 +420,11 @@ def get_output(job, workdir):
         Copy output files to the localhost.
         """
         path = join(workdir, fmt.format(file_name))
-        job.outputs[file_name].save_as(path)
-
-        return path
+        try:
+            job.outputs[file_name].save_as(path)
+            return path
+        except AttributeError:
+            return None
 
     file_formats = {
         "gromitout": "{}.out",

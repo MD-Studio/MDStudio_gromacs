@@ -3,14 +3,5 @@
     "id": "http://mdstudio/schemas/gromacs_lie_response.json",
     "title": "GromacsLIE",
     "description": "Input to query the status of a LIE simulation using GROMACS",
-    "type": "object",
-    "properties": {
-	"future": {
-	    "$ref": "resource://mdgroup/common_resources/future/v1",
-	    "description": "Object describing a future results"
-	}
-    },
-    "required": [
-	"future"
-    ]
+    "$ref": "resource://mdgroup/common_resources/future/v1"
 }

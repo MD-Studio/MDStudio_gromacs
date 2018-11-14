@@ -53,12 +53,12 @@ class MDWampApi(ComponentSession):
         return_value(output)
 
     @endpoint('query_liemd_results', 'query_liemd_results_request',
-              'query_liemd_results_response')
+              'liemd_response')
     def query_liemd_results(self, request, claims):
         """
         Check the status of the simulation and return the results if available.
         """
-        clean_remote = request['clean_remote_workdir']
+        clean_remote = request.get('clean_remote_workdir', True)
         output = yield query_simulation_results(
             request, self.db, clean_remote=clean_remote)
         return_value(output)
@@ -123,9 +123,11 @@ class MDWampApi(ComponentSession):
         """
         cerise_config, gromacs_config = self.setup_environment(request)
 
+        clean_remote = request.get('clean_remote_workdir', True)
         # Run the MD and retrieve the energies
-        output = call_cerise_gromit(gromacs_config, cerise_config, self.db,
-                                    clean_remote=request.get('clean_remote_workdir', True))
+        output = yield call_cerise_gromit(
+            gromacs_config, cerise_config, self.db,
+            clean_remote=clean_remote)
         return_value(output)
 
     @chainable
@@ -134,9 +136,10 @@ class MDWampApi(ComponentSession):
         async version of the `run_gromacs_liemd` function.
         """
         cerise_config, gromacs_config = self.setup_environment(request)
+        clean_remote = request.get('clean_remote_workdir', True)
 
         output = yield call_async_cerise_gromit(
-            gromacs_config, cerise_config, self.db, clean_remote=True)
+            gromacs_config, cerise_config, self.db, clean_remote=clean_remote)
 
         return_value(output)
 
