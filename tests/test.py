@@ -41,6 +41,7 @@ class Run_md(ComponentSession):
 
     @chainable
     def on_run(self):
+        print("running async function!")
         data = yield self.call(
             "mdgroup.lie_md.endpoint.async_liemd_ligand",
             {"cerise_file": create_path_file_obj(cerise_file),
@@ -56,12 +57,29 @@ class Run_md(ComponentSession):
                  "residues": residues}})
         print("promised job: ", data)
 
-        time.sleep(20)
+        print("running sequential version")
+
         output = yield self.call(
+            "mdgroup.lie_md.endpoint.liemd_ligand",
+            {"cerise_file": create_path_file_obj(cerise_file),
+             "ligand_file": create_path_file_obj(ligand_file),
+             "protein_file": None,
+             "protein_top": create_path_file_obj(protein_top),
+             "topology_file": create_path_file_obj(topology_file),
+             "include": list(map(create_path_file_obj, include)),
+             "workdir": workdir,
+             "clean_remote_workdir": False,
+             "parameters": {
+                 "sim_time": 0.001,
+                 "residues": residues}})
+
+        print("output sequential: ", output)
+
+        output2 = yield self.call(
             "mdgroup.lie_md.endpoint.query_liemd_results",
             data
         )
-        print("MD output: ", output)
+        print("MD output async: ", output2)
 
 
 if __name__ == "__main__":

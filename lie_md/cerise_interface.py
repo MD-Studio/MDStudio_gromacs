@@ -149,7 +149,7 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
 
         # Job done
         elif status.lower() == 'success':
-            output = wait_extract_clean(job, srv, request['workdir'], clean_remote)
+            output = wait_extract_clean(job, srv, srv_data['workdir'], clean_remote)
             results = serialize_files(output)
 
             status = 'completed'
@@ -160,7 +160,7 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
         else:
             print("Job {} has FAILED!\nCheck output at: {}".format(
                 request['task_id'], srv_data['workdir']))
-            output = wait_extract_clean(job, srv, request['workdir'], clean_remote)
+            output = wait_extract_clean(job, srv, srv_data['workdir'], clean_remote)
             status = 'failed'
 
         return {'status': status, 'task_id': task_id, 'results': results}
@@ -378,7 +378,7 @@ def try_to_close_service(srv_data):
     try:
         srv = cc.service_from_dict(srv_data)
 
-        if len(srv.list_jobs()):
+        if len(srv.list_jobs()) == 0:
             print("Shutting down Cerise-client service")
             cc.stop_managed_service(srv)
             cc.destroy_managed_service(srv)
