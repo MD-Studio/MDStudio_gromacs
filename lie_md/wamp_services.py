@@ -30,7 +30,7 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'async_liemd_response')
+    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'liemd_response')
     def run_async_ligand_solvent_md(self, request, claims):
         """
         Run Gromacs MD of ligand in solvent. Invoke a ligand solvent simulation
@@ -46,7 +46,7 @@ class MDWampApi(ComponentSession):
         output = yield self.run_async_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('async_liemd_protein', 'liemd_protein_request', 'async_liemd_response')
+    @endpoint('async_liemd_protein', 'liemd_protein_request', 'liemd_response')
     def run_async_protein_protein_md(self, request, claims):
         """Run asynchronous Gromacs MD of a protein-ligand system in solvent"""
         output = yield self.run_async_gromacs_liemd(request, claims)
@@ -63,7 +63,7 @@ class MDWampApi(ComponentSession):
             request, self.db, clean_remote=clean_remote)
         return_value(output)
 
-    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response',
+    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_solvent_md(self, request, claims):
         """
@@ -79,7 +79,7 @@ class MDWampApi(ComponentSession):
         output = yield self.run_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response',
+    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_protein_md(self, request, claims):
         """
