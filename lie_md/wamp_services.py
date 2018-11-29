@@ -14,7 +14,8 @@ from autobahn.wamp import RegisterOptions
 from os.path import (abspath, join)
 from tempfile import mktemp
 
-from lie_md.cerise_interface import (call_cerise_gromit, create_cerise_config)
+from lie_md.cerise_interface import (
+    call_async_cerise_gromit, call_cerise_gromit, create_cerise_config, query_simulation_results)
 from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
@@ -29,7 +30,40 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_ligand_response',
+    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'liemd_response')
+    def run_async_ligand_solvent_md(self, request, claims):
+        """
+        Run Gromacs MD of ligand in solvent. Invoke a ligand solvent simulation
+        and returns inmediately, returning to the  caller information for querying the results.
+
+        TODO: Stil requires the protein topology and positional restraint
+              (include) files. Makes no sense for ligand in solvent but
+              required by gromit somehow.
+        """
+        # Protein structure not needed. Explicitly set to None
+        request['protein_file'] = None
+
+        output = yield self.run_async_gromacs_liemd(request, claims)
+        return_value(output)
+
+    @endpoint('async_liemd_protein', 'liemd_protein_request', 'liemd_response')
+    def run_async_protein_protein_md(self, request, claims):
+        """Run asynchronous Gromacs MD of a protein-ligand system in solvent"""
+        output = yield self.run_async_gromacs_liemd(request, claims)
+        return_value(output)
+
+    @endpoint('query_liemd_results', 'query_liemd_results_request',
+              'liemd_response')
+    def query_liemd_results(self, request, claims):
+        """
+        Check the status of the simulation and return the results if available.
+        """
+        clean_remote = request.get('clean_remote_workdir', True)
+        output = yield query_simulation_results(
+            request, self.db, clean_remote=clean_remote)
+        return_value(output)
+
+    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_solvent_md(self, request, claims):
         """
@@ -39,14 +73,13 @@ class MDWampApi(ComponentSession):
               (include) files. Makes no sense for ligand in solvent but
               required by gromit somehow.
         """
-
         # Protein structure not needed. Explicitly set to None
         request['protein_file'] = None
 
         output = yield self.run_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_protein_response',
+    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_protein_md(self, request, claims):
         """
@@ -88,22 +121,40 @@ class MDWampApi(ComponentSession):
         the method will perform a SOLVENT LIGAND MD if you provide the
         `protein_file` it will perform a PROTEIN-LIGAND MD.
         """
+        cerise_config, gromacs_config = self.setup_environment(request)
 
+        clean_remote = request.get('clean_remote_workdir', True)
+        # Run the MD and retrieve the energies
+        output = yield call_cerise_gromit(
+            gromacs_config, cerise_config, self.db,
+            clean_remote=clean_remote)
+        return_value(output)
+
+    @chainable
+    def run_async_gromacs_liemd(self, request, claims):
+        """
+        async version of the `run_gromacs_liemd` function.
+        """
+        cerise_config, gromacs_config = self.setup_environment(request)
+        clean_remote = request.get('clean_remote_workdir', True)
+
+        output = yield call_async_cerise_gromit(
+            gromacs_config, cerise_config, self.db, clean_remote=clean_remote)
+
+        return_value(output)
+
+    def setup_environment(self, request):
+        """
+        Set all the configuration to perform a simulation.
+        """
         # Base workdir needs to exist. Might be shared between docker and host
-        request['workdir'] = abspath(request['workdir'])
-        if not os.path.exists(request['workdir']):
-            raise IOError('Workdir does not exist: {0}'.format(request['workdir']))
+        check_workdir(request['workdir'])
 
         task_id = uuid.uuid1().hex
         request.update({"task_id": task_id})
         self.log.info("starting liemd task_id: {}".format(task_id))
 
-        # Create a task specific directory in workdir based on a unique tmp name
-        task_workdir = os.path.join(request['workdir'], os.path.basename(mktemp()))
-        try:
-            os.mkdir(task_workdir)
-        except:
-            raise IOError('Unable to create task directory: {0}'.format(task_workdir))
+        task_workdir = create_task_workdir(request['workdir'])
 
         request['workdir'] = task_workdir
         self.log.info("store output in: {0}".format(task_workdir))
@@ -111,10 +162,10 @@ class MDWampApi(ComponentSession):
         # Copy input files to task workdir
         request = copy_file_path_objects_to_workdir(request.copy())
 
-        # Build 'include' file list for cerise/CWL
-        request['include'] = []
-        for file_type in ('attype_itp', 'protein_posre_itp'):
-            request['include'].append(request[file_type])
+        # # Build 'include' file list for cerise/CWL
+        # request['include'] = []
+        # for file_type in ('attype_itp', 'protein_posre_itp'):
+        #     request['include'].append(request[file_type])
 
         # Load GROMACS configuration
         gromacs_config = set_gromacs_input(request)
@@ -126,16 +177,29 @@ class MDWampApi(ComponentSession):
         with open(join(request['workdir'], "cerise.json"), "w") as f:
             json.dump(cerise_config, f)
 
-        # Run the MD and retrieve the energies
-        output = yield call_cerise_gromit(gromacs_config, cerise_config, self.db,
-                                          clean_remote=request.get('clean_remote_workdir', True))
+        return cerise_config, gromacs_config
 
-        if output is None:
-            output = {'status': 'failed'}
-        else:
-            output['status'] = 'completed'
 
-        return_value(output)
+def create_task_workdir(workdir):
+    """
+    Create a task specific directory in workdir based on a unique tmp name
+    """
+    print("workdir: ", workdir)
+    task_workdir = os.path.join(workdir, os.path.basename(mktemp()))
+    try:
+        os.mkdir(task_workdir)
+        return task_workdir
+    except:
+        raise IOError('Unable to create task directory: {0}'.format(task_workdir))
+
+
+def check_workdir(workdir):
+    """
+    Check if a workdir exists
+    """
+    workdir = abspath(workdir)
+    if not os.path.exists(workdir):
+        raise IOError('Workdir does not exist: {0}'.workdir)
 
 
 def copy_file_path_objects_to_workdir(d):

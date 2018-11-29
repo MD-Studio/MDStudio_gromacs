@@ -62,25 +62,112 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=Tr
         # Run Jobs
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
-
+        srv_data['status'] = yield wait_till_running(srv, srv_data['task_id'])
         # Register Job
         register_srv_job(srv_data, cerise_db)
 
-        # extract results
-        srv_data = yield extract_simulation_info(srv_data, cerise_config, clean_remote)
+        # # extract results
+        output = yield query_simulation_results(srv_data, cerise_db, clean_remote)
 
         # Update job state in DB
         update_srv_info_at_db(srv_data, cerise_db)
 
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
+        output = {'status': 'failed', 'task_id': cerise_config['task_id']}
 
     finally:
         # Shutdown Service if there are no other jobs running
         if srv_data is not None:
-            yield try_to_close_service(srv_data, cerise_db)
+            yield try_to_close_service(srv_data)
 
-    return_value(serialize_files(srv_data))
+    return_value(output)
+
+
+@chainable
+def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=True):
+    """
+    Use cerise to run gromacs in a remote cluster, see:
+    http://cerise-client.readthedocs.io/en/latest/
+    It returns inmediately and provided the user the information to query for the results.
+
+    :param gromacs_config: gromacs simulation parameters
+    :type gromacs_config:  :py:dict
+    :param cerise_config:  cerise-client process settings.
+    :type cerise_config:   :py:dict
+    :param cerise_db:      MongoDB db to store the information related to the
+                           Cerise services and jobs.
+
+    :returns:              MD output file paths
+    :rtype:                :py:dict
+    """
+    srv_data = None
+    try:
+        # Run Jobs
+        srv = create_service(cerise_config)
+        srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
+        register_srv_job(srv_data, cerise_db)
+        srv_data['status'] = 'running'
+    except:
+        print("simulation failed due to: ", sys.exc_info()[0])
+
+    output = {'status': 'running', 'task_id': srv_data['task_id'],
+              'query_url': 'mdgroup.lie_md.endpoint.query_liemd_results'}
+    return_value(output)
+
+
+def find_data(cerise_db, keyword, value):
+    """
+    Find an entry in the database using `keyword`
+    """
+
+
+@chainable
+def query_simulation_results(request, cerise_db, clean_remote=True):
+    """
+    Check the status of a given
+    """
+    results = {}
+    task_id = request['task_id']
+
+    try:
+        if 'name' in request:
+            srv_data = request
+        else:
+            # Search for the service
+            srv_data = yield cerise_db.find_one('cerise', {'task_id': task_id})['result']
+
+        # Start service if necessary
+        srv = cc.service_from_dict(srv_data)
+
+        job = srv.get_job_by_name(srv_data['task_id'])
+        status = job.state
+
+        # Job is still running
+        if any(status.lower() == x for x in ["waiting", "running"]):
+            status = 'running'
+
+        # Job done
+        elif status.lower() == 'success':
+            output = wait_extract_clean(job, srv, srv_data['workdir'], clean_remote)
+            results = serialize_files(output)
+
+            status = 'completed'
+
+            # Shutdown Service if there are no other jobs running
+            yield try_to_close_service(request)
+        # Job fails
+        else:
+            print("Job {} has FAILED!\nCheck output at: {}".format(
+                request['task_id'], srv_data['workdir']))
+            output = wait_extract_clean(job, srv, srv_data['workdir'], clean_remote)
+            status = 'failed'
+
+        return {'status': status, 'task_id': task_id, 'results': results}
+
+    except cc.errors.JobNotFound:
+        msg = "Job with configuration:\n{}\nWas not found!".format(request)
+        raise RuntimeError(msg)
 
 
 @retry(wait_random_min=500, wait_random_max=2000)
@@ -128,57 +215,29 @@ def submit_new_job(srv, gromacs_config, cerise_config):
 
     # Collect data
     srv_data = collect_srv_data(
-        job.id, cc.service_to_dict(srv), gromacs_config, cerise_config)
-
-    # wait until the job is running
-    while job.state == 'Waiting':
-        sleep(2)
-
-    # change jo state
-    srv_data['job_state'] = 'Running'
+        cc.service_to_dict(srv), gromacs_config, cerise_config)
 
     return_value(srv_data)
 
 
 @chainable
-def extract_simulation_info(srv_data, cerise_config, clean_remote):
-    """
-    Wait for a job to finish, if the job is already done
-    return the information retrieved from the db.
+def wait_till_running(srv, job_name):
+    """wait until the job is running"""
+    job = srv.get_job_by_name(job_name)
+    while job.state.lower() == 'waiting':
+        sleep(2)
 
-    :param srv_data:      Cerise service meta-data
-    :type srv_data:       :py:dict
-    :param cerise_config: Cerise service input data
-    :type cerise_config:  :py:dict
-    """
-
-    print("Extracting output from: {}".format(cerise_config['workdir']))
-    if cc.managed_service_exists(srv_data['name']):
-        srv = cc.service_from_dict(srv_data)
-        job = srv.get_job_by_id(srv_data['cerise_job_id'])
-        output = wait_extract_clean(job, srv, cerise_config, clean_remote)
-
-        # Update data in the db
-        srv_data.update({"results": output})
-        srv_data['job_state'] = job.state
-
-    # remove MongoDB object id
-    srv_data.pop('_id', None)
-
-    return_value(srv_data)
+    return_value('running')
 
 
-def wait_extract_clean(job, srv, cerise_config, clean_remote):
+def wait_extract_clean(job, srv, workdir, clean_remote):
     """
     Wait for the `job` to finish, extract the output and cleanup.
     If the job fails returns None.
     """
-
-    wait_for_job(job, cerise_config['log'])
-    if job.state == "Success":
-        output = get_output(job, cerise_config)
-    else:
-        output = None
+    log = join(workdir, 'cerise.log')
+    wait_for_job(job, log)
+    output = get_output(job, workdir)
 
     # Clean up the job and the service.
     if clean_remote:
@@ -188,19 +247,17 @@ def wait_extract_clean(job, srv, cerise_config, clean_remote):
     return output
 
 
-def collect_srv_data(cerise_job_id, srv_data, gromacs_config, cerise_config):
+def collect_srv_data(srv_data, gromacs_config, cerise_config):
     """
     Add all the relevant information for the job and
     service to the service dictionary
     """
-
-    # Save id of the current job in the dict
-    srv_data['cerise_job_id'] = cerise_job_id
-
     # create a unique ID for the ligand
     srv_data['task_id'] = cerise_config['task_id']
     srv_data['username'] = cerise_config['username']
     srv_data['job_type'] = gromacs_config['job_type']
+    srv_data['port'] = cerise_config.get('port', 29593)
+    srv_data['workdir'] = cerise_config['workdir']
 
     return srv_data
 
@@ -210,9 +267,7 @@ def create_lie_job(srv, gromacs_config, cerise_config):
     Create a Cerise job using the cerise `srv` and set gromacs
     parameters using `gromacs_config`.
     """
-
-    job_name = 'job_{}'.format(cerise_config['task_id'])
-    job = try_to_create_job(srv, job_name)
+    job = try_to_create_job(srv, cerise_config['task_id'])
 
     # Copy gromacs input files
     job = add_input_files_lie(job, gromacs_config)
@@ -301,13 +356,13 @@ def wait_for_job(job, cerise_log):
     """
     Wait until job is done.
     """
-
+    print("waiting for job")
     while job.is_running():
         sleep(30)
 
     # Process output
     if job.state != 'Success':
-        print('There was an error: {}'.format(job.state))
+        print('Cerise reported error: {}'.format(job.state))
 
     print('Cerise log stored at: {}'.format(cerise_log))
     with open(cerise_log, 'w') as f:
@@ -315,7 +370,7 @@ def wait_for_job(job, cerise_log):
 
 
 @chainable
-def try_to_close_service(srv_data, cerise_db):
+def try_to_close_service(srv_data):
     """
     Close service it There are no more jobs and
     the service is still running.
@@ -323,17 +378,13 @@ def try_to_close_service(srv_data, cerise_db):
     try:
         srv = cc.service_from_dict(srv_data)
 
-        # Search for other running jobs
-        query = {'username': srv_data['username'], 'job_state': 'Running'}
-        counts = yield cerise_db.count('cerise', query)
-        if counts['total'] == 0:
+        if len(srv.list_jobs()) == 0:
             print("Shutting down Cerise-client service")
             cc.stop_managed_service(srv)
             cc.destroy_managed_service(srv)
 
     except cc.errors.ServiceNotFound:
         print("There is not Cerise Service running")
-        pass
 
 
 def serialize_files(data):
@@ -360,10 +411,20 @@ def serialize_files(data):
     return {key: serialize(val) for key, val in data.items()}
 
 
-def get_output(job, config):
+def get_output(job, workdir):
     """
     retrieve output information from the `job`.
     """
+    def copy_output_from_remote(file_name, fmt):
+        """
+        Copy output files to the localhost.
+        """
+        path = join(workdir, fmt.format(file_name))
+        try:
+            job.outputs[file_name].save_as(path)
+            return path
+        except AttributeError:
+            return None
 
     file_formats = {
         "gromitout": "{}.out",
@@ -385,25 +446,11 @@ def get_output(job, config):
         "decompose_out": "{}.out"}
 
     # Save all data about the simulation
-    outputs = job.outputs
     results = {
-        key: copy_output_from_remote(outputs[key], key, config, fmt)
-        for key, fmt in file_formats.items() if key in outputs}
+        key: copy_output_from_remote(key, fmt)
+        for key, fmt in file_formats.items() if key in job.outputs}
 
     return results
-
-
-def copy_output_from_remote(file_object, file_name, config, fmt):
-    """
-    Copy output files to the localhost.
-    """
-
-    workdir = config['workdir']
-
-    path = join(workdir, fmt.format(file_name))
-    file_object.save_as(path)
-
-    return path
 
 
 def choose_cwl_workflow(protein_file):

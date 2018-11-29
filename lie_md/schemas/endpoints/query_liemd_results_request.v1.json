@@ -1,0 +1,7 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "GromacsLIE",
+    "description": "Input to query the status of a LIE simulation using GROMACS",
+    "$ref": "resource://mdgroup/common_resources/future/v1"
+}

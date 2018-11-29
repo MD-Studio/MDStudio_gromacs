@@ -25,7 +25,7 @@ workdir = "/tmp/mdstudio/lie_md"
 if not os.path.exists(workdir):
     os.makedirs(workdir)
 
-cerise_file = create_path_file_obj(join(root, "cerise_config_binac.json"))
+cerise_file = create_path_file_obj(join(root, "cerise_config_lisa.json"))
 ligand_file = create_path_file_obj(join(root, "compound.pdb"))
 protein_file = None
 protein_top = create_path_file_obj(join(root, "protein.top"))
