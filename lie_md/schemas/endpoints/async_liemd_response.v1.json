@@ -1,0 +1,7 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://mdstudio/schemas/gromacs_lie_response.json",
+    "title": "lie_md_async_response",
+    "description": "Object describing the future output the LIE components using GROMACS MD software",
+    "$ref": "resource://mdgroup/common_resources/future/v1"
+}

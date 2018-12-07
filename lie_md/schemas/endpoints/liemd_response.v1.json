@@ -1,7 +1,29 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "id": "http://mdstudio/schemas/gromacs_lie_response.json",
-    "title": "GromacsLIE",
+    "title": "lie_md_blocking_response",
     "description": "Object describing the future output the LIE components using GROMACS MD software",
-    "$ref": "resource://mdgroup/common_resources/future/v1"
+    "properties": {
+	"status": {
+	    "type": "string",
+	    "description": "Current status of the future/promise",
+	    "enum": [
+		"completed",
+		"failed",
+		"running"
+	    ]
+	},
+	"task_id": {
+	    "type": "string",
+	    "description": "Identifier of the task"
+	},
+	"results": {
+	    "type": "object",
+	    "description": "Dictionary-like object containing the results if available"
+	}
+    },
+    "required": [
+	"status",
+	"task_id"
+    ]
 }
