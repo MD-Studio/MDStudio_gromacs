@@ -10,17 +10,19 @@ import json
 import os
 import shutil
 import uuid
+
 from autobahn.wamp import RegisterOptions
 from os.path import (abspath, join)
 from tempfile import mktemp
 
-from lie_md.cerise_interface import (
-    call_async_cerise_gromit, call_cerise_gromit, create_cerise_config, query_simulation_results)
-from lie_md.md_config import set_gromacs_input
 from mdstudio.api.endpoint import endpoint
 from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
+
+from lie_md.cerise_interface import (call_async_cerise_gromit, call_cerise_gromit, create_cerise_config,
+                                     query_simulation_results)
+from lie_md.md_config import set_gromacs_input
 
 
 class MDWampApi(ComponentSession):
@@ -30,13 +32,14 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'async_liemd_response')
+    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'async_liemd_response',
+              options=RegisterOptions(invoke='roundrobin'))
     def run_async_ligand_solvent_md(self, request, claims):
         """
         Run Gromacs MD of ligand in solvent. Invoke a ligand solvent simulation
         and returns inmediately, returning to the  caller information for querying the results.
 
-        TODO: Stil requires the protein topology and positional restraint
+        TODO: Still requires the protein topology and positional restraint
               (include) files. Makes no sense for ligand in solvent but
               required by gromit somehow.
         """
@@ -46,14 +49,15 @@ class MDWampApi(ComponentSession):
         output = yield self.run_async_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('async_liemd_protein', 'liemd_protein_request', 'async_liemd_response')
+    @endpoint('async_liemd_protein', 'liemd_protein_request', 'async_liemd_response',
+              options=RegisterOptions(invoke='roundrobin'))
     def run_async_protein_protein_md(self, request, claims):
         """Run asynchronous Gromacs MD of a protein-ligand system in solvent"""
         output = yield self.run_async_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('query_liemd_results', 'query_liemd_results_request',
-              'liemd_response')
+    @endpoint('query_liemd_results', 'query_liemd_results_request', 'liemd_response',
+              options=RegisterOptions(invoke='roundrobin'))
     def query_liemd_results(self, request, claims):
         """
         Check the status of the simulation and return the results if available.
@@ -69,7 +73,7 @@ class MDWampApi(ComponentSession):
         """
         Run Gromacs MD of ligand in solvent
 
-        TODO: Stil requires the protein topology and positional restraint
+        TODO: Still requires the protein topology and positional restraint
               (include) files. Makes no sense for ligand in solvent but
               required by gromit somehow.
         """
