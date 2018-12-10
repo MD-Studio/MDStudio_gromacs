@@ -166,10 +166,10 @@ class MDWampApi(ComponentSession):
         # Copy input files to task workdir
         request = copy_file_path_objects_to_workdir(request.copy())
 
-        # # Build 'include' file list for cerise/CWL
-        # request['include'] = []
-        # for file_type in ('attype_itp', 'protein_posre_itp'):
-        #     request['include'].append(request[file_type])
+        # Build 'include' file list for cerise/CWL
+        request['include'] = []
+        for file_type in ('attype_itp', 'protein_posre_itp'):
+            request['include'].append(request[file_type])
 
         # Load GROMACS configuration
         gromacs_config = set_gromacs_input(request)
