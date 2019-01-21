@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import print_function
-from collections import defaultdict
-from mdstudio.deferred.chainable import chainable
-from mdstudio.deferred.return_value import return_value
-from os.path import join
-from retrying import retry
-from time import sleep
+
 import cerise_client.service as cc
 import docker
 import json
 import os
 import six
 import sys
+
+from collections import defaultdict
+from mdstudio.deferred.chainable import chainable
+from mdstudio.deferred.return_value import return_value
+from retrying import retry
+from time import sleep
 
 
 def create_cerise_config(input_session):
@@ -35,7 +37,7 @@ def create_cerise_config(input_session):
 
     # Set Workflow
     config['cwl_workflow'] = choose_cwl_workflow(input_session['protein_file'])
-    config['log'] = join(input_session['workdir'], 'cerise.log')
+    config['log'] = os.path.join(input_session['workdir'], 'cerise.log')
     config['workdir'] = input_session['workdir']
 
     return config
@@ -53,6 +55,8 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=Tr
     :type cerise_config:   :py:dict
     :param cerise_db:      MongoDB db to store the information related to the
                            Cerise services and jobs.
+    :param clean_remote:   clean the job on the remote resource when done/failed
+    :type clean_remote:    :py:bool
 
     :returns:              MD output file paths
     :rtype:                :py:dict
@@ -62,24 +66,28 @@ def call_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_remote=Tr
         # Run Jobs
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
-        srv_data['status'] = yield wait_till_running(srv, srv_data['task_id'])
+
         # Register Job
         register_srv_job(srv_data, cerise_db)
 
-        # # extract results
+        # extract results
         output = yield query_simulation_results(srv_data, cerise_db, clean_remote)
 
         # Update job state in DB
         update_srv_info_at_db(srv_data, cerise_db)
 
-    except:
-        print("simulation failed due to: ", sys.exc_info()[0])
+    except Exception as e:
+        print("simulation failed due to: {0}".format(e))
         output = {'status': 'failed', 'task_id': cerise_config['task_id']}
 
     finally:
         # Shutdown Service if there are no other jobs running
         if srv_data is not None:
             yield try_to_close_service(srv_data)
+
+    while not output.get('status', 'failed') in ('completed', 'failed'):
+        output = yield query_simulation_results(srv_data, cerise_db, clean_remote)
+        sleep(30)
 
     return_value(output)
 
@@ -97,6 +105,8 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_rem
     :type cerise_config:   :py:dict
     :param cerise_db:      MongoDB db to store the information related to the
                            Cerise services and jobs.
+    :param clean_remote:   clean the job on the remote resource when done/failed
+    :type clean_remote:    :py:bool
 
     :returns:              MD output file paths
     :rtype:                :py:dict
@@ -106,26 +116,30 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db, clean_rem
         # Run Jobs
         srv = create_service(cerise_config)
         srv_data = yield submit_new_job(srv, gromacs_config, cerise_config)
+        srv_data['status'] = yield wait_till_running(srv, srv_data['task_id'])
+        # Register Job
         register_srv_job(srv_data, cerise_db)
-        srv_data['status'] = 'running'
+
     except:
         print("simulation failed due to: ", sys.exc_info()[0])
+        return_value({'status': 'failed', 'task_id': cerise_config['task_id']})
 
     output = {'status': 'running', 'task_id': srv_data['task_id'],
               'query_url': 'mdgroup.lie_md.endpoint.query_liemd_results'}
     return_value(output)
 
 
-def find_data(cerise_db, keyword, value):
-    """
-    Find an entry in the database using `keyword`
-    """
-
-
 @chainable
 def query_simulation_results(request, cerise_db, clean_remote=True):
     """
     Check the status of a given
+
+    :param request:        Cerise managed remote job settings.
+    :type request:         :py:dict
+    :param cerise_db:      MongoDB db to store the information related to the
+                           Cerise services and jobs.
+    :param clean_remote:   clean the job on the remote resource when done/failed
+    :type clean_remote:    :py:bool
     """
     results = {}
     task_id = request['task_id']
@@ -163,7 +177,7 @@ def query_simulation_results(request, cerise_db, clean_remote=True):
             output = wait_extract_clean(job, srv, srv_data['workdir'], clean_remote)
             status = 'failed'
 
-        return {'status': status, 'task_id': task_id, 'results': results}
+        return_value({'status': status, 'task_id': task_id, 'results': results})
 
     except cc.errors.JobNotFound:
         msg = "Job with configuration:\n{}\nWas not found!".format(request)
@@ -177,6 +191,7 @@ def create_service(cerise_config):
     using the `cerise_config` file.
     """
 
+    srv = None
     try:
         srv = cc.require_managed_service(
                 cerise_config['docker_name'],
@@ -235,7 +250,7 @@ def wait_extract_clean(job, srv, workdir, clean_remote):
     Wait for the `job` to finish, extract the output and cleanup.
     If the job fails returns None.
     """
-    log = join(workdir, 'cerise.log')
+    log = os.path.join(workdir, 'cerise.log')
     wait_for_job(job, log)
     output = get_output(job, workdir)
 
@@ -419,7 +434,7 @@ def get_output(job, workdir):
         """
         Copy output files to the localhost.
         """
-        path = join(workdir, fmt.format(file_name))
+        path = os.path.join(workdir, fmt.format(file_name))
         try:
             job.outputs[file_name].save_as(path)
             return path
@@ -461,6 +476,6 @@ def choose_cwl_workflow(protein_file):
 
     root = os.path.dirname(__file__)
     if protein_file is not None:
-        return join(root, 'data/protein_ligand.cwl')
+        return os.path.join(root, 'data/protein_ligand.cwl')
     else:
-        return join(root, 'data/solvent_ligand.cwl')
+        return os.path.join(root, 'data/solvent_ligand.cwl')
