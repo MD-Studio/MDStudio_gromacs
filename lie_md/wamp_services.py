@@ -12,7 +12,6 @@ import shutil
 import uuid
 
 from autobahn.wamp import RegisterOptions
-from os.path import (abspath, join)
 from tempfile import mktemp
 
 from mdstudio.api.endpoint import endpoint
@@ -29,15 +28,33 @@ class MDWampApi(ComponentSession):
     """
     Molecular dynamics WAMP methods.
     """
+
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('async_liemd_ligand', 'liemd_ligand_request', 'async_liemd_response',
+    @endpoint('query_liemd_results', 'query_liemd_results_request', 'async_liemd_response',
+              options=RegisterOptions(invoke='roundrobin'))
+    def query_liemd_results(self, request, claims):
+        """
+        Check the status of the simulation and return the results if available.
+
+        The request should at least contain a task_id stored in the cerise job DB.
+        The response is a typical async_liemd response, a 'Future' object.
+        """
+
+        output = yield query_simulation_results(request, self.db)
+        for key, value in request.items():
+            if not key in output:
+                output[key] = value
+
+        return_value(output)
+
+    @endpoint('async_liemd_ligand', 'async_liemd_ligand_request', 'async_liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_async_ligand_solvent_md(self, request, claims):
         """
         Run Gromacs MD of ligand in solvent. Invoke a ligand solvent simulation
-        and returns inmediately, returning to the  caller information for querying the results.
+        and returns immediate, returning to the  caller information for querying the results.
 
         TODO: Still requires the protein topology and positional restraint
               (include) files. Makes no sense for ligand in solvent but
@@ -49,22 +66,14 @@ class MDWampApi(ComponentSession):
         output = yield self.run_async_gromacs_liemd(request, claims)
         return_value(output)
 
-    @endpoint('async_liemd_protein', 'liemd_protein_request', 'async_liemd_response',
+    @endpoint('async_liemd_protein', 'async_liemd_protein_request', 'async_liemd_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_async_protein_protein_md(self, request, claims):
-        """Run asynchronous Gromacs MD of a protein-ligand system in solvent"""
-        output = yield self.run_async_gromacs_liemd(request, claims)
-        return_value(output)
+        """
+        Run asynchronous Gromacs MD of a protein-ligand system in solvent
+        """
 
-    @endpoint('query_liemd_results', 'query_liemd_results_request', 'liemd_response',
-              options=RegisterOptions(invoke='roundrobin'))
-    def query_liemd_results(self, request, claims):
-        """
-        Check the status of the simulation and return the results if available.
-        """
-        clean_remote = request.get('clean_remote_workdir', True)
-        output = yield query_simulation_results(
-            request, self.db, clean_remote=clean_remote)
+        output = yield self.run_async_gromacs_liemd(request, claims)
         return_value(output)
 
     @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_response',
@@ -126,12 +135,11 @@ class MDWampApi(ComponentSession):
         `protein_file` it will perform a PROTEIN-LIGAND MD.
         """
         cerise_config, gromacs_config = self.setup_environment(request)
+        cerise_config['clean_remote'] = request.get('clean_remote_workdir', True)
 
-        clean_remote = request.get('clean_remote_workdir', True)
         # Run the MD and retrieve the energies
-        output = yield call_cerise_gromit(
-            gromacs_config, cerise_config, self.db,
-            clean_remote=clean_remote)
+        output = yield call_cerise_gromit(gromacs_config, cerise_config, self.db)
+
         return_value(output)
 
     @chainable
@@ -140,10 +148,9 @@ class MDWampApi(ComponentSession):
         async version of the `run_gromacs_liemd` function.
         """
         cerise_config, gromacs_config = self.setup_environment(request)
-        clean_remote = request.get('clean_remote_workdir', True)
+        cerise_config['clean_remote'] = request.get('clean_remote_workdir', True)
 
-        output = yield call_async_cerise_gromit(
-            gromacs_config, cerise_config, self.db, clean_remote=clean_remote)
+        output = yield call_async_cerise_gromit(gromacs_config, cerise_config, self.db)
 
         return_value(output)
 
@@ -178,7 +185,7 @@ class MDWampApi(ComponentSession):
         cerise_config = create_cerise_config(request)
         cerise_config['task_id'] = task_id
 
-        with open(join(request['workdir'], "cerise.json"), "w") as f:
+        with open(os.path.join(request['workdir'], "cerise.json"), "w") as f:
             json.dump(cerise_config, f)
 
         return cerise_config, gromacs_config
@@ -188,7 +195,7 @@ def create_task_workdir(workdir):
     """
     Create a task specific directory in workdir based on a unique tmp name
     """
-    print("workdir: ", workdir)
+
     task_workdir = os.path.join(workdir, os.path.basename(mktemp()))
     try:
         os.mkdir(task_workdir)
@@ -201,7 +208,7 @@ def check_workdir(workdir):
     """
     Check if a workdir exists
     """
-    workdir = abspath(workdir)
+    workdir = os.path.abspath(workdir)
     if not os.path.exists(workdir):
         raise IOError('Workdir does not exist: {0}'.workdir)
 
@@ -234,7 +241,7 @@ def copy_file_to_workdir(serialized_file, workdir):
 
     # First try to copy the content
     file_path = serialized_file['path']
-    new_path = join(workdir, os.path.basename(file_path))
+    new_path = os.path.join(workdir, os.path.basename(file_path))
 
     if serialized_file['content'] is not None:
         with open(new_path,  'w') as f:
