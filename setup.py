@@ -41,7 +41,7 @@ setup(
     packages=find_packages(),
     package_data={'lie_md': ['data/*']},
     py_modules=[distribution_name],
-    install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six'],
+    install_requires=['cerise_client==0.2.4', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six'],
     include_package_data=True,
     zip_safe=True,
     classifiers=[
