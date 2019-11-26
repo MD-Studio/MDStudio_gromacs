@@ -21,7 +21,7 @@ def create_path_file_obj(path):
 
 
 residues = [28, 29, 65, 73, 74, 75, 76, 78]
-workdir = "/tmp/mdstudio/lie_md"
+workdir = "/tmp/mdstudio/mdstudio_gromacs"
 if not os.path.exists(workdir):
     os.makedirs(workdir)
 
@@ -43,7 +43,7 @@ class Run_md(ComponentSession):
     def on_run(self):
 
         result = yield self.call(
-            "mdgroup.lie_md.endpoint.liemd_ligand",
+            "mdgroup.mdstudio_gromacs.endpoint.liemd_ligand",
             {"cerise_file": cerise_file,
              "ligand_file": ligand_file,
              "protein_file": None,

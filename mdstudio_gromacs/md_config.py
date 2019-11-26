@@ -3,7 +3,7 @@
 from os.path import join
 from twisted.logger import Logger
 
-from lie_md.gromacs_topology_amber import correctItp, fix_atom_types_file
+from mdstudio_gromacs.gromacs_topology_amber import correctItp, fix_atom_types_file
 
 logger = Logger()
 

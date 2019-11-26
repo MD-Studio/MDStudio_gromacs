@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# package: lie_docking
+# package: mdstudio_gromacs
 # file: setup.py
 #
-# Part of ‘lie_docking’, a package providing molecular docking functionality
-# for the LIEStudio package.
+# Part of ‘mdstudio_gromacs’, a package providing GROMACS Molecular Dynamics
+# functionality for the MDStudio package.
 #
 # Copyright © 2018 Marc van Dijk, VU University Amsterdam, the Netherlands
 #
@@ -23,23 +23,23 @@
 
 from setuptools import setup, find_packages
 
-distribution_name = 'lie_md'
+distribution_name = 'mdstudio_gromacs'
 
 setup(
     name=distribution_name,
     version=0.2,
-    description='MDStudio molecular simulation module',
+    description='MDStudio GROMACS Molecular Dynamics module',
     author="""
     Marc van Dijk - VU University - Amsterdam
     Paul Visscher - Zefiros Software (www.zefiros.eu)
     Felipe Zapata - eScience Center (https://www.esciencecenter.nl/)""",
     author_email=['m4.van.dijk@vu.nl', 'f.zapata@esciencecenter.nl'],
-    url='https://github.com/MD-Studio/lie_md',
+    url='https://github.com/MD-Studio/MDStudio_gromacs',
     license='Apache Software License 2.0',
-    keywords='LIEStudio molecular simulationg',
+    keywords='MDStudio GROMACS Molecular Dynamics',
     platforms=['Any'],
     packages=find_packages(),
-    package_data={'lie_md': ['data/*']},
+    package_data={'mdstudio_gromacs': ['data/*']},
     py_modules=[distribution_name],
     install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six'],
     include_package_data=True,
@@ -52,7 +52,7 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
     ],
-    scripts=['lie_md/scripts/getEnergies.py'],
+    scripts=['mdstudio_gromacs/scripts/getEnergies.py'],
     extras_require={
         'test': ['coverage']
     }

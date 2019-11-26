@@ -19,9 +19,9 @@ from mdstudio.component.session import ComponentSession
 from mdstudio.deferred.chainable import chainable
 from mdstudio.deferred.return_value import return_value
 
-from lie_md.cerise_interface import (call_async_cerise_gromit, call_cerise_gromit, create_cerise_config,
-                                     query_simulation_results)
-from lie_md.md_config import set_gromacs_input
+from mdstudio_gromacs.cerise_interface import (call_async_cerise_gromit, call_cerise_gromit, create_cerise_config,
+                                               query_simulation_results)
+from mdstudio_gromacs.md_config import set_gromacs_input
 
 
 class MDWampApi(ComponentSession):

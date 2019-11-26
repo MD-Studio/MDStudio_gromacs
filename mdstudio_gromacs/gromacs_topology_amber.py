@@ -11,7 +11,7 @@ import fnmatch
 import numpy as np
 import os
 
-from lie_md.parsers import itp_parser, parser_atoms_mol2, parse_file
+from mdstudio_gromacs.parsers import itp_parser, parser_atoms_mol2, parse_file
 from twisted.logger import Logger
 
 logger = Logger()

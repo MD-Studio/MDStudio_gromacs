@@ -126,7 +126,7 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         return_value({'status': 'failed', 'task_id': cerise_config['task_id']})
 
     output = {'status': 'running', 'task_id': srv_data['task_id'],
-              'query_url': 'mdgroup.lie_md.endpoint.query_liemd_results'}
+              'query_url': 'mdgroup.mdstudio_gromacs.endpoint.query_liemd_results'}
     return_value(output)
 
 
@@ -150,7 +150,7 @@ def query_simulation_results(request, cerise_db):
         else:
             # Search for the service
             srv_data = yield cerise_db.find_one('cerise', {'task_id': task_id})['result']
-        
+
         # Start service if necessary
         srv = cc.service_from_dict(srv_data)
 
@@ -169,7 +169,7 @@ def query_simulation_results(request, cerise_db):
             status = 'completed'
 
             # Shutdown Service if there are no other jobs running
-            yield try_to_close_service(request)
+            yield try_to_close_service(srv_data)
         # Job fails
         else:
             print("Job {} has FAILED!\nCheck output at: {}".format(request['task_id'], srv_data['workdir']))

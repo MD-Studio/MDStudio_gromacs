@@ -36,7 +36,7 @@
     "workdir": {
       "type": "string",
       "description": "Temporary directory for MD simulation",
-      "default": "/tmp/mdstudio/lie_md"
+      "default": "/tmp/mdstudio/mdstudio_gromacs"
     },
     "clean_remote_workdir": {
       "description": "Remove the remote Cerise working directory after the job finsihed or failed",
