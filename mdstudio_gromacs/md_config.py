@@ -3,7 +3,7 @@
 from os.path import join
 from twisted.logger import Logger
 
-from mdstudio_gromacs.gromacs_topology_amber import correctItp, fix_atom_types_file
+from mdstudio_gromacs.gromacs_topology_amber import correct_itp, fix_atom_types_file
 
 logger = Logger()
 
@@ -26,7 +26,7 @@ def fix_topology_ligand(gromacs_config, workdir):
     """
 
     itp_file = join(workdir, 'ligand.itp')
-    dict_results = correctItp(gromacs_config['topology_file'], itp_file,  posre=True)
+    dict_results = correct_itp(gromacs_config['topology_file'], itp_file, posre=True)
 
     # Add charges and topology
     gromacs_config['charge'] = dict_results['charge']
@@ -34,7 +34,7 @@ def fix_topology_ligand(gromacs_config, workdir):
 
     # correct atomtypes file
     if 'attype_itp' in gromacs_config:
-        fix_atom_types_file(gromacs_config['attype_itp'], dict_results['attypes'], workdir)
+        fix_atom_types_file(gromacs_config['attype_itp'], dict_results['attypes'])
 
     # Added further include file
     include_itp = dict_results.get('posre_filename', None)

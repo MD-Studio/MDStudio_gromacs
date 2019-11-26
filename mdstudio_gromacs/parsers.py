@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 import pyparsing as pp
@@ -16,7 +17,7 @@ def parse_file(p, file_name):
         raise
 
 
-def skipSupress(z):
+def skip_supress(z):
     """Suppress stream until `z`"""
     return pp.Suppress(pp.SkipTo(z))
 
@@ -26,7 +27,7 @@ natural = pp.Word(pp.nums)
 
 float_number = pp.Regex(r'(\-)?(\d+)?(\.)(\d*)?([eE][\-\+]\d+)?')
 
-skipLine = pp.Suppress(skipSupress('\n'))
+skipLine = pp.Suppress(skip_supress('\n'))
 
 comment = pp.Suppress(pp.Literal(';')) + skipLine
 
@@ -51,5 +52,5 @@ many_sections = pp.Group(pp.OneOrMore(section))
 itp_parser = optional_comment + many_sections
 
 # Parser for the atom section of mol2 files
-header_mol2 = skipSupress(pp.Literal("@<TRIPOS>ATOM")) + skipLine
+header_mol2 = skip_supress(pp.Literal("@<TRIPOS>ATOM")) + skipLine
 parser_atoms_mol2 = header_mol2 + pp.Group(pp.OneOrMore(line + skipLine))

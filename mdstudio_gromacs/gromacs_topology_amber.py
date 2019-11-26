@@ -7,7 +7,6 @@ createTopology function should receive an input file
 and return a tuple containing itp and pdb of the ligand.
 """
 
-import fnmatch
 import numpy as np
 import os
 
@@ -35,9 +34,12 @@ formats_dict = {
     "exclusions": "{:>5s}{:>5s}\n"}
 
 
-def correctItp(itp_file, new_itp_file, posre=True):
-    '''Correct hydrogen and heavy atom masses in the .itp file
-       makes position restraint file for the ligand'''
+def correct_itp(itp_file, new_itp_file, posre=True):
+    """
+    Correct hydrogen and heavy atom masses in the .itp file
+    makes position restraint file for the ligand
+    """
+
     if posre:
         posre_filename = "{}-posre.itp".format(
             os.path.splitext(new_itp_file)[0])
@@ -48,7 +50,7 @@ def correctItp(itp_file, new_itp_file, posre=True):
     itp_dict, ordered_keys = read_include_topology(itp_file)
 
     # apply heavy hydrogens(HH)
-    itp_dict = adjust_heavyH(itp_dict)
+    itp_dict = adjust_heavy_h(itp_dict)
 
     # write corrected itp (with HH and no atomtype section
     write_itp(itp_dict, ordered_keys, new_itp_file, posre=posre_filename)
@@ -65,7 +67,7 @@ def correctItp(itp_file, new_itp_file, posre=True):
             'charge': int(charge)}
 
 
-def fix_atom_types_file(attypes_file, atomtypes_ligand, workdir):
+def fix_atom_types_file(attypes_file, atomtypes_ligand):
     """
     added the missing atomtypes into the attypes.itp file.
     """
@@ -85,6 +87,7 @@ def fix_atom_types(atomtypes, ligand_atomtypes):
     Add the atom types of the ligand `ligand_atomtypes` that are not already
     present at `atomtypes`.
     """
+
     ligand_atomtypes = ligand_atomtypes.reshape(ligand_atomtypes.size // 7, 7)
     atomtypes = atomtypes.reshape(atomtypes.size // 7, 7)
     labels = atomtypes[:, 0]
@@ -104,6 +107,7 @@ def read_include_topology(itp_file):
     :param itp_file: path to the itp file
     :returns: dict
     """
+
     rs = parse_file(itp_parser, itp_file)
 
     # tranform the result into a dict
@@ -118,6 +122,7 @@ def create_unique_keys(xs):
     """
     List of unique block names
     """
+
     ys = []
     for key in xs:
         ys.append(check_name(key, ys))
@@ -126,16 +131,20 @@ def create_unique_keys(xs):
 
 
 def check_name(key, ys):
-    """Rename a key if already present in the list"""
+    """
+    Rename a key if already present in the list
+    """
+
     if key in ys:
         key = '{}_2'.format(key)
     return key
 
 
-def adjust_heavyH(itp_dict):
+def adjust_heavy_h(itp_dict):
     """
-    Adjust the weights of hydrogens, and their heavy atom partner
+    Adjust the weights of hydrogen's, and their heavy atom partner
     """
+
     # Indices of the hydrogens and their heavy companions
     hs, ps = compute_index_hs_and_partners(itp_dict)
 
@@ -152,9 +161,10 @@ def adjust_heavyH(itp_dict):
 
 def adjust_atom_weight(atoms, hs, heavy, coordination):
     """
-    Weight the masses of the `atoms` specificied  in `indices`
+    Weight the masses of the `atoms` specified  in `indices`
     using the `weights`.
     """
+
     mass_hydrogen = float(atoms[hs[0], 7])
     masses_hs = 4 * np.array(atoms[hs, 7], dtype=np.float)
     masses_heavy = np.array(atoms[heavy, 7], dtype=np.float)
@@ -177,6 +187,7 @@ def compute_index_hs_and_partners(itp_dict):
     Assuming the the hydrogens are always listed after the heavy
     partner.
     """
+
     atoms = itp_dict['atoms']
     bonds = itp_dict['bonds']
 
@@ -194,14 +205,14 @@ def compute_index_hs_and_partners(itp_dict):
     return hs.flatten(), ps.flatten()
 
 
-def write_itp(
-        itp_dict, keys, itp_filename, posre=None, excludeList=['atomtypes']):
+def write_itp(itp_dict, keys, itp_filename, posre=None, exclude_list=['atomtypes']):
     """
     write new itp. atomtype block is removed
     """
+
     with open(itp_filename, "w") as outFile:
         for block_name in keys:
-            if block_name not in excludeList:
+            if block_name not in exclude_list:
                 outFile.write("[ {} ]\n".format(check_block_name(block_name)))
                 for item in itp_dict[block_name]:
                     outFile.write(formats_dict[block_name].format(*item))
@@ -216,6 +227,7 @@ def check_block_name(block_name):
     """
     Check whether a block_name has been rename
     """
+
     if block_name.endswith('_2'):
         block_name = block_name[:-2]
 
@@ -226,6 +238,7 @@ def write_posre(itp_dict, output_itp):
     """
     Write position restraint itp file.
     """
+
     header = """
 #ifndef 3POSCOS
   #define 2POSCOS 5000
@@ -248,10 +261,7 @@ def write_posre(itp_dict, output_itp):
                     "{:4}    1  2POSCOS 2POSCOS 2POSCOS\n".format(atom[0]))
 
 
-def reorderhem(
-        file_input, file_output='reordered.pdb',
-        path_to_hem_template=None,
-        listchange=None, diffres=0):
+def reorderhem(file_input, file_output='reordered.pdb', path_to_hem_template=None):
     """
     reorder the atom names for heme according to:
     J Comput Chem. 2012 Jan 15;33(2):119-33
@@ -259,6 +269,7 @@ def reorderhem(
     patch non standard water residue names and other pdb feature
     for amber topology creation
     """
+
     # Read HEME file specification
     new_order = read_hem_template(path_to_hem_template)
 
@@ -271,6 +282,7 @@ def read_hem_template(path_to_hem_template):
     """
     Retrieve all the atoms in the @<TRIPOS>ATOM section.
     """
+
     rs = parse_file(parser_atoms_mol2, path_to_hem_template)
     return np.array(rs[0])
 
@@ -279,4 +291,5 @@ def create_new_pdb(pdb_lines, new_order):
     """
     Write the new order PDB file
     """
+
     pass

@@ -7,7 +7,6 @@ import docker
 import json
 import os
 import six
-import sys
 
 from collections import defaultdict
 from mdstudio.deferred.chainable import chainable

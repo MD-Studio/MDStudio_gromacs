@@ -200,7 +200,7 @@ def create_task_workdir(workdir):
     try:
         os.mkdir(task_workdir)
         return task_workdir
-    except:
+    except Exception:
         raise IOError('Unable to create task directory: {0}'.format(task_workdir))
 
 
@@ -210,7 +210,7 @@ def check_workdir(workdir):
     """
     workdir = os.path.abspath(workdir)
     if not os.path.exists(workdir):
-        raise IOError('Workdir does not exist: {0}'.workdir)
+        raise IOError('Workdir does not exist: {0}'.format(workdir))
 
 
 def copy_file_path_objects_to_workdir(d):
@@ -221,8 +221,8 @@ def copy_file_path_objects_to_workdir(d):
     # Check if d is path_file object
     path_file = {'content', 'path', 'extension', 'encoding'}
 
-    def condition(x):
-        return isinstance(x, dict) and set(x.keys()).issubset(path_file)
+    def condition(y):
+        return isinstance(y, dict) and set(y.keys()).issubset(path_file)
 
     workdir = d['workdir']
     for key, val in d.items():

@@ -10,6 +10,7 @@ import cookielib
 from time import sleep
 from molhandle import *
 from bs4 import BeautifulSoup
+import sys
 import os
 import shutil
 import logging

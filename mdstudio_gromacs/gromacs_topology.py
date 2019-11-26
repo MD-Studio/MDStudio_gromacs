@@ -3,7 +3,7 @@
 """
 file: gromacs_setup.py
 
-Function for prepairing input definitions for a GROMACS
+Function for preparing input definitions for a GROMACS
 Linear Interaction Energy MD calculation
 """
 
@@ -12,7 +12,8 @@ import logging
 import re
 
 
-def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMols=[], excludePosre=[], excludeHH=[], miscMols=[]):
+def correct_itp(topfile, topOutFn, posre=True, outitp={}, removeMols=[], replaceMols=[], excludePosre=[], excludeHH=[],
+                miscMols=[]):
     """
     Correct hydrogen and heavy atom masses in the .itp file
     makes position restraint file for the ligand
@@ -22,20 +23,20 @@ def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMo
     print("CORRECT ITP")
 
     if posre:
-        posreNm="%s-posre.itp"%os.path.splitext(os.path.basename(topOutFn))[0]
+        posreNm = "%s-posre.itp"%os.path.splitext(os.path.basename(topOutFn))[0]
     else:
-        posreNm=None
+        posreNm = None
 
     #read itp
     print("READ TOP")
-    blocks,listBlocks,listMols=readCard(topfile)
+    blocks, listBlocks, listMols = readCard(topfile)
 
     print("REMOVE MOLS")
     # remove mols;  eg. WAT to be substituted with SOL in amber to gromacs conversion
-    blocks,listBlocks,listMols=topRmMols(blocks,listBlocks,removeMols)
+    blocks, listBlocks, listMols = topRmMols(blocks, listBlocks, removeMols)
 
     print("REPLACE MOLS")
-    blocks,listBlocks=topReplaceMols(blocks,listBlocks,replaceMols)
+    blocks, listBlocks=topReplaceMols(blocks, listBlocks, replaceMols)
 
     print("HH")
     #apply heavy hydrogens(HH)
@@ -44,26 +45,26 @@ def correctItp(topfile,topOutFn, posre=True, outitp={}, removeMols=[], replaceMo
     print("POSRES")
     #create positional restraints file
     if posre:
-        posreNm=outPosre(blocks,listBlocks, listMols, excludePosre)
+        posreNm=outPosre(blocks, listBlocks, listMols, excludePosre)
     else:
         posreNm={}
 
     print("ADD MOLS")
     #add additional moleculetypes (e.g. solvent and ions)
-    miscBlocks,miscListBlocks,miscListMols=([],[],[])
+    miscBlocks, miscListBlocks, miscListMols=([], [], [])
     for mol in miscMols:
-        b,lb,lm=readCard(mol)
+        b, lb, lm=readCard(mol)
         miscBlocks+=b
         miscListBlocks+=lb
         miscListMols+=lm 
     
-    fixNewBlocks,fixListBlocks=itpAddMols(blocks,listBlocks, miscBlocks, miscListBlocks)
+    fixNewBlocks, fixListBlocks=itpAddMols(blocks, listBlocks, miscBlocks, miscListBlocks)
 
     # replace mols in system definition
      
     print("OUT ITP")
     #write corrected itp (with HH and no atomtype section
-    topOut, extItps=itpOut(fixNewBlocks,fixListBlocks,topOutFn,posre=posreNm, excludeList=outitp)
+    topOut, extItps=itpOut(fixNewBlocks, fixListBlocks, topOutFn, posre=posreNm, excludeList=outitp)
 
     results={
              'top':topOut,
@@ -83,7 +84,7 @@ def readCard(filetop):
     title=False
     read=False
 
-    with open(filetop,'r') as itp:
+    with open(filetop, 'r') as itp:
         block=[]
         for line in itp:
             atom=[]
@@ -94,9 +95,9 @@ def readCard(filetop):
                 listBlocks.append(line)
                 blockNames.append(None)
             else:          
-                line_sp=re.split('\s*',line[:-1])
+                line_sp=re.split('\s*', line[:-1])
                 for item in line_sp:
-                    if re.match(";",item):              
+                    if re.match(";", item):
                         break
 
                     elif item == "[":
@@ -141,11 +142,11 @@ def readCard(filetop):
     return (listBlocks, blockNames, listMols)
 
 
-def topRmMols(blocks,blockNames,mols2Del):
+def topRmMols(blocks, blockNames, mols2Del):
     print("TOP RM MOLS")
     popOut=False
     listOut=[]
-    for nbl,blName in enumerate(blockNames):
+    for nbl, blName in enumerate(blockNames):
         if blName=='moleculetype':
             if blocks[nbl][0][0] in mols2Del:
                 popOut=True
@@ -181,28 +182,28 @@ def topRmMols(blocks,blockNames,mols2Del):
         listMols.append(mol)
     print("LISTMOLS  ", listMols)
 
-    return (blocks,blockNames,listMols)
+    return (blocks, blockNames, listMols)
 
 
-def topReplaceMols(blocks,blockNames,mols2Rep):
-    # nol2Rep: [{'in':'WAT','out':'SOL'},..] 
+def topReplaceMols(blocks, blockNames, mols2Rep):
+    # nol2Rep: [{'in':'WAT', 'out':'SOL'}, ..]
     print('TOPREPLACE')
     listin=[x['in'] for x in mols2Rep]
-    for nbl,blName in enumerate(blockNames):
+    for nbl, blName in enumerate(blockNames):
         if blName=='molecules':
             for mol in blocks[nbl]:
                 if mol[0] in listin:
                     mol[0]=mols2Rep[listin.index(mol[0])]['out']
     
-    return (blocks,blockNames)
+    return (blocks, blockNames)
 
 
-def heavyH(blockNames, blocks,listMols, excludeList=['WAT']):
+def heavyH(blockNames, blocks, listMols, excludeList=['WAT']):
     '''Adjust the weights of hydrogens, and their heavy atom partner'''
     for mol in listMols:
         if mol['name'] not in excludeList:
             for bond in blocks[mol['bonds']]:
-                for hI in [0,1]:
+                for hI in [0, 1]:
                     if re.match("^h|^H", blocks[mol['atoms']][int(bond[hI])-1] [1]):
                         if hI==0:
                             hJ=1
@@ -218,13 +219,13 @@ def heavyH(blockNames, blocks,listMols, excludeList=['WAT']):
     return(blocks)
 
 
-def outPosre(blocks,listBlocks, listMols, excludeList):
+def outPosre(blocks, listBlocks, listMols, excludeList):
     outposre={}
     for mol in listMols:
         if mol['name'] not in excludeList:
             oitp='%s-posre.itp'%mol['name']
             outposre[mol['name']]=oitp
-            with open(oitp,"w") as outFile:
+            with open(oitp, "w") as outFile:
                 outFile.write(\
 '#ifndef 1POSCOS\n\
   #define 1POSCOS 10000\n\
@@ -243,7 +244,7 @@ def outPosre(blocks,listBlocks, listMols, excludeList):
                     if not atom[4].startswith('H'):
                         if atom[3] == 'HEM':
                             outFile.write("%-4s    1  1POSCOS 1POSCOS 1POSCOS\n" % atom[0])
-                        elif atom[4] in ['CA','N','O','C']:
+                        elif atom[4] in ['CA', 'N', 'O', 'C']:
                             outFile.write("%-4s    1  1POSCOS 1POSCOS 1POSCOS\n" % atom[0])
                         elif atom[4] in ['CB']:
                             outFile.write("%-4s    1  2POSCOS 2POSCOS 2POSCOS\n" % atom[0])
@@ -259,7 +260,7 @@ def itpAddMols(blocks, nameBlocks, miscBlocks, miscNameBlocks):
     
     ##FIX ATOMTYPES
     idxTypes=nameBlocks.index('atomtypes')
-    idxNewTypes=[ i for i,x in enumerate(miscNameBlocks) if x=='atomtypes']
+    idxNewTypes=[ i for i, x in enumerate(miscNameBlocks) if x=='atomtypes']
    
     for AttypeBlock in idxNewTypes:
         for newAtm in miscBlocks[AttypeBlock]:
@@ -278,26 +279,26 @@ def itpAddMols(blocks, nameBlocks, miscBlocks, miscNameBlocks):
     for bl in range(len(miscNameBlocks)):
         if bl not in idxNewTypes:
             insIdx=idxSystem+blNoAty
-            blocks.insert(insIdx,miscBlocks[bl])
-            nameBlocks.insert(insIdx,miscNameBlocks[bl])
+            blocks.insert(insIdx, miscBlocks[bl])
+            nameBlocks.insert(insIdx, miscNameBlocks[bl])
             blNoAty+=1
     
     return blocks, nameBlocks
     
 
-def itpOut(blocks,nameBlocks,oitp,posre,excludeList={}):
+def itpOut(blocks, nameBlocks, oitp, posre, excludeList={}):
     '''write new top. blocks defined in excludeList are removed and saved in the file 'outfile'. e.g atomtypes'''
     def outPosre(posreFN):
         outFile.write('#ifdef POSRES\n#include "%s"\n#endif\n\n'%posreFN)
 
-    def outBlock(blockName,block,output):
+    def outBlock(blockName, block, output):
         output.write("[ %s ]\n"%blockName)
         outFormat=defineFMTblock(block)
         for item in block:
             output.write(outFormat.format(d=item))
 
     extItps=[]
-    with open(oitp,"w") as outFile:
+    with open(oitp, "w") as outFile:
         molWithPosre=False
         molName=None
         for nbl, blockName in enumerate(nameBlocks):
@@ -310,8 +311,8 @@ def itpOut(blocks,nameBlocks,oitp,posre,excludeList={}):
                     openMode='w'
                 else:
                     openMode='a'
-                with open(excludeList[blockName]['outfile'],openMode) as outItp:
-                    outBlock(blockName,blocks[nbl],outItp)
+                with open(excludeList[blockName]['outfile'], openMode) as outItp:
+                    outBlock(blockName, blocks[nbl], outItp)
                 extItps.append(excludeList[blockName]['outfile'])
                 outFile.write('#include "%s"\n\n'%excludeList[blockName]['outfile'])
                 # outitp
@@ -330,17 +331,17 @@ def itpOut(blocks,nameBlocks,oitp,posre,excludeList={}):
                         outPosre(posre[molName])
 
                 # PRINT OUT BLOCK
-                outBlock(blockName,blocks[nbl],outFile)
+                outBlock(blockName, blocks[nbl], outFile)
 
             outFile.write("\n")
 
-    return oitp,extItps
+    return oitp, extItps
 
       
 def defineFMTblock(block):
     listFmt=[]
     for atom in block:
-        for i,item in enumerate(atom):
+        for i, item in enumerate(atom):
             try:
                 listFmt[i].append(len(item))
             except IndexError:
@@ -348,14 +349,14 @@ def defineFMTblock(block):
 
     nchars=[max(x)+2 for x in listFmt]
     fmtOut=""
-    for n,col in enumerate(nchars):
-        fmtOut=fmtOut+"{d[%d]:>%ds}"%(n,col)
+    for n, col in enumerate(nchars):
+        fmtOut=fmtOut+"{d[%d]:>%ds}"%(n, col)
     fmtOut=fmtOut+"\n"
 
     return fmtOut
 
 
-def correctAttype(itp,newtypes):
+def correctAttype(itp, newtypes):
     oldtypes=[x[0] for x in itp['atomtypes']]   
     for attype in newtypes:
         if not attype[0] in oldtypes:
