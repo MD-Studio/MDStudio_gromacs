@@ -39,9 +39,11 @@ setup(
     keywords='MDStudio GROMACS Molecular Dynamics',
     platforms=['Any'],
     packages=find_packages(),
-    package_data={'mdstudio_gromacs': ['data/*']},
+    package_data={'mdstudio_gromacs': ['data/*', 'schemas/endpoints/*']},
     py_modules=[distribution_name],
-    install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six'],
+    scripts=['mdstudio_gromacs/scripts/getEnergies.py'],
+    install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six', 'docker',
+                      'twisted==18.4.0'],
     include_package_data=True,
     zip_safe=True,
     classifiers=[
@@ -52,8 +54,4 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
     ],
-    scripts=['mdstudio_gromacs/scripts/getEnergies.py'],
-    extras_require={
-        'test': ['coverage']
-    }
 )
