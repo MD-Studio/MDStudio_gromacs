@@ -125,7 +125,7 @@ def call_async_cerise_gromit(gromacs_config, cerise_config, cerise_db):
         return_value({'status': 'failed', 'task_id': cerise_config['task_id']})
 
     output = {'status': 'running', 'task_id': srv_data['task_id'],
-              'query_url': 'mdgroup.mdstudio_gromacs.endpoint.query_liemd_results'}
+              'query_url': 'mdgroup.mdstudio_gromacs.endpoint.query_gromacs_results'}
     return_value(output)
 
 

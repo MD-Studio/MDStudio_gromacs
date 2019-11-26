@@ -43,7 +43,7 @@ class Run_md(ComponentSession):
     def on_run(self):
 
         result = yield self.call(
-            "mdgroup.mdstudio_gromacs.endpoint.liemd_ligand",
+            "mdgroup.mdstudio_gromacs.endpoint.gromacs_ligand",
             {"cerise_file": cerise_file,
              "ligand_file": ligand_file,
              "protein_file": None,

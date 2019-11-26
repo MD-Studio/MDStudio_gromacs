@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://mdstudio/schemas/gromacs_liemd_ligand_request.json",
+  "id": "http://mdstudio/schemas/gromacs_gromacs_ligand_request.json",
   "title": "GromacsLIE",
   "description": "LIE using GROMACS MD software",
   "type": "object",

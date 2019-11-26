@@ -43,7 +43,7 @@ class Run_md(ComponentSession):
     def on_run(self):
         print("running async function!")
         data = yield self.call(
-            "mdgroup.mdstudio_gromacs.endpoint.async_liemd_ligand",
+            "mdgroup.mdstudio_gromacs.endpoint.async_gromacs_ligand",
             {"cerise_file": create_path_file_obj(cerise_file),
              "ligand_file": create_path_file_obj(ligand_file),
              "protein_file": None,
@@ -60,7 +60,7 @@ class Run_md(ComponentSession):
         print("running sequential version")
 
         output = yield self.call(
-            "mdgroup.mdstudio_gromacs.endpoint.liemd_ligand",
+            "mdgroup.mdstudio_gromacs.endpoint.gromacs_ligand",
             {"cerise_file": create_path_file_obj(cerise_file),
              "ligand_file": create_path_file_obj(ligand_file),
              "protein_file": None,
@@ -76,7 +76,7 @@ class Run_md(ComponentSession):
         print("output sequential: ", output)
 
         output2 = yield self.call(
-            "mdgroup.mdstudio_gromacs.endpoint.query_liemd_results",
+            "mdgroup.mdstudio_gromacs.endpoint.query_gromacs_results",
             data
         )
         print("MD output async: ", output2)

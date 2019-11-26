@@ -32,24 +32,24 @@ class MDWampApi(ComponentSession):
     def authorize_request(self, uri, claims):
         return True
 
-    @endpoint('query_liemd_results', 'query_liemd_results_request', 'async_liemd_response',
+    @endpoint('query_gromacs_results', 'query_gromacs_results_request', 'async_gromacs_response',
               options=RegisterOptions(invoke='roundrobin'))
-    def query_liemd_results(self, request, claims):
+    def query_gromacs_results(self, request, claims):
         """
         Check the status of the simulation and return the results if available.
 
         The request should at least contain a task_id stored in the cerise job DB.
-        The response is a typical async_liemd response, a 'Future' object.
+        The response is a typical async_gromacs response, a 'Future' object.
         """
 
         output = yield query_simulation_results(request, self.db)
         for key, value in request.items():
-            if not key in output:
+            if key not in output:
                 output[key] = value
 
         return_value(output)
 
-    @endpoint('async_liemd_ligand', 'async_liemd_ligand_request', 'async_liemd_response',
+    @endpoint('async_gromacs_ligand', 'async_gromacs_ligand_request', 'async_gromacs_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_async_ligand_solvent_md(self, request, claims):
         """
@@ -63,20 +63,20 @@ class MDWampApi(ComponentSession):
         # Protein structure not needed. Explicitly set to None
         request['protein_file'] = None
 
-        output = yield self.run_async_gromacs_liemd(request, claims)
+        output = yield self.run_async_gromacs_gromacs(request, claims)
         return_value(output)
 
-    @endpoint('async_liemd_protein', 'async_liemd_protein_request', 'async_liemd_response',
+    @endpoint('async_gromacs_protein', 'async_gromacs_protein_request', 'async_gromacs_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_async_protein_protein_md(self, request, claims):
         """
         Run asynchronous Gromacs MD of a protein-ligand system in solvent
         """
 
-        output = yield self.run_async_gromacs_liemd(request, claims)
+        output = yield self.run_async_gromacs_gromacs(request, claims)
         return_value(output)
 
-    @endpoint('liemd_ligand', 'liemd_ligand_request', 'liemd_response',
+    @endpoint('gromacs_ligand', 'gromacs_ligand_request', 'gromacs_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_solvent_md(self, request, claims):
         """
@@ -89,21 +89,21 @@ class MDWampApi(ComponentSession):
         # Protein structure not needed. Explicitly set to None
         request['protein_file'] = None
 
-        output = yield self.run_gromacs_liemd(request, claims)
+        output = yield self.run_gromacs_gromacs(request, claims)
         return_value(output)
 
-    @endpoint('liemd_protein', 'liemd_protein_request', 'liemd_response',
+    @endpoint('gromacs_protein', 'gromacs_protein_request', 'gromacs_response',
               options=RegisterOptions(invoke='roundrobin'))
     def run_ligand_protein_md(self, request, claims):
         """
         Run Gromacs MD of a protein-ligand system in solvent
         """
 
-        output = yield self.run_gromacs_liemd(request, claims)
+        output = yield self.run_gromacs_gromacs(request, claims)
         return_value(output)
 
     @chainable
-    def run_gromacs_liemd(self, request, claims):
+    def run_gromacs_gromacs(self, request, claims):
         """
         First it calls gromit to compute the Ligand-solute energies, then
         calls gromit to calculate the protein-ligand energies.
@@ -143,9 +143,9 @@ class MDWampApi(ComponentSession):
         return_value(output)
 
     @chainable
-    def run_async_gromacs_liemd(self, request, claims):
+    def run_async_gromacs_gromacs(self, request, claims):
         """
-        async version of the `run_gromacs_liemd` function.
+        async version of the `run_gromacs_gromacs` function.
         """
         cerise_config, gromacs_config = self.setup_environment(request)
         cerise_config['clean_remote'] = request.get('clean_remote_workdir', True)
@@ -163,7 +163,7 @@ class MDWampApi(ComponentSession):
 
         task_id = uuid.uuid1().hex
         request.update({"task_id": task_id})
-        self.log.info("starting liemd task_id: {}".format(task_id))
+        self.log.info("starting gromacs task_id: {}".format(task_id))
 
         task_workdir = create_task_workdir(request['workdir'])
 
