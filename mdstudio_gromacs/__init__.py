@@ -8,10 +8,10 @@ import os
 
 __module__ = 'mdstudio_gromacs'
 __docformat__ = 'restructuredtext'
-__version__ = '{major:d}.{minor:d}'.format(major=0, minor=2)
+__version__ = '{major:d}.{minor:d}'.format(major=1, minor=0)
 __author__ = 'Marc van Dijk'
-__status__ = 'pre-release beta1'
-__date__ = '15 april 2016'
+__status__ = 'release alpha1'
+__date__ = '12 december 2019'
 __licence__ = 'Apache Software License 2.0'
 __url__ = 'https://github.com/MD-Studio/MDStudio_gromacs'
 __copyright__ = "Copyright (c) VU University, Amsterdam"

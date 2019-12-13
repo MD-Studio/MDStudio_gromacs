@@ -27,7 +27,7 @@ distribution_name = 'mdstudio_gromacs'
 
 setup(
     name=distribution_name,
-    version=0.2,
+    version=1.0,
     description='MDStudio GROMACS Molecular Dynamics module',
     author="""
     Marc van Dijk - VU University - Amsterdam
@@ -39,7 +39,7 @@ setup(
     keywords='MDStudio GROMACS Molecular Dynamics',
     platforms=['Any'],
     packages=find_packages(),
-    package_data={'mdstudio_gromacs': ['data/*', 'schemas/endpoints/*']},
+    package_data={'mdstudio_gromacs': ['data/*', 'schemas/endpoints/*', 'scripts/*']},
     py_modules=[distribution_name],
     scripts=['mdstudio_gromacs/scripts/getEnergies.py'],
     install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six', 'docker',
