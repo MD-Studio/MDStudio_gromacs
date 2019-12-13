@@ -1,6 +1,6 @@
 # MDStudio GROMACS
 
-[![Build Status](https://travis-ci.com/MD-Studio/MDStudio_gromacs.svg?branch=master)](https://travis-ci.com/MD-Studio/MDStudio_gromacs)
+[![Build Status](https://travis-ci.org/MD-Studio/MDStudio_gromacs.svg?branch=master)](https://travis-ci.com/MD-Studio/MDStudio_gromacs)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/697c033fd7674ecea28c089150a25dfa)](https://www.codacy.com/app/marcvdijk/MDStudio_gromacs?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=MD-Studio/MDStudio_gromacs&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/MD-Studio/MDStudio_gromacs/branch/master/graph/badge.svg)](https://codecov.io/gh/MD-Studio/MDStudio_gromacs)
 
