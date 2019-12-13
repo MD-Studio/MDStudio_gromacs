@@ -10,4 +10,16 @@ mdstudio_gromacs is a python library to call GROMACS using the [cerise](https://
 This library contains a set of [CWL](https://www.commonwl.org/) scripts to perform several preparation steps, together
 with the actual MD simulation and some final postprocessing.
 
+### Install option 1 standalone deployment of the service
+For a custom installation clone the MDStudio_gromacs GitHub repository and install `mdstudio_gromacs` locally as:
 
+    pip install (-e) mdstudio_gromacs/
+
+Followed by:
+
+    ./entry_point_mdstudio_gromacs.sh
+    
+or
+
+    export MD_CONFIG_ENVIRONMENTS=dev,docker
+    python -u -m mdstudio_gromacs
