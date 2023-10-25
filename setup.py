@@ -43,7 +43,7 @@ setup(
     py_modules=[distribution_name],
     scripts=['mdstudio_gromacs/scripts/getEnergies.py'],
     install_requires=['cerise_client', 'mdstudio', 'numpy', 'pyparsing', 'panedr', 'retrying', 'six', 'docker',
-                      'twisted==18.4.0'],
+                      'twisted==23.8.0'],
     include_package_data=True,
     zip_safe=True,
     classifiers=[
